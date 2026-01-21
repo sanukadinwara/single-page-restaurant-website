@@ -39,6 +39,8 @@ function App(){
     if (pizza.variants && pizza.variants.length > 0) {
         setSelectedVariant(pizza.variants[0].name);
         setCurrentPrice(pizza.variants[0].price);
+    } else {
+        setCurrentPrice(Number(pizza.price));
     }
     
     setShowModal(true);
@@ -55,20 +57,23 @@ function App(){
   const confirmAddToCart = () => {
     if (!selectedPizza) return;
 
-    const itemNameWithVariant = `${selectedPizza.name} (${selectedVariant})`;
+    const itemNameWithVariant = selectedVariant 
+        ? `${selectedPizza.name} (${selectedVariant})` 
+        : selectedPizza.name;
 
     const newItem = {
-        id: selectedPizza.id + selectedVariant, 
+        id: selectedPizza.id + (selectedVariant || ""), 
         name: itemNameWithVariant,
-        price: currentPrice, 
+        price: Number(currentPrice),
+        quantity: Number(quantity) 
     };
 
     const existingItem = cartItems.find(item => item.id === selectedPizza.id);
 
     if (existingItem) {
       setCartItems(cartItems.map(item => 
-        item.id === selectedPizza.id 
-        ? { ...item, quantity: item.quantity + quantity } 
+        item.id === newItem.id 
+        ? { ...item, quantity: item.quantity + newItem.quantity } 
         : item
       ));
 

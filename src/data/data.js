@@ -4,7 +4,7 @@ export const itemsData = [
         category: "Pizza",
         name: "Chicken Pizza",
         desc: "Spicy chicken with mozzarella cheese",
-        image: "https://images.unsplash.com/photo-1628840042765-356cda07504e?q=80&w=1000",
+        image: "https://adminsc.pizzahut.lk//images/mainmenu/209e7feb-7c0b-4fc4-8019-ab2a9e3406a9.jpg",
         variants: [
         { name: "Small", price: 1200 },
         { name: "Medium", price: 1900 },
@@ -28,7 +28,7 @@ export const itemsData = [
         category: "Pizza",
         name: "Veggie Supreme",
         desc: "Onions, capsicum, tomato & olives",
-        image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=1000",
+        image: "https://adminsc.pizzahut.lk//images/mainmenu/2688c78f-e854-49b8-a3c3-d84171f501c2.jpg",
         variants: [
             { name: "Small", price: 1000 },
             { name: "Medium", price: 1600 },
@@ -41,7 +41,7 @@ export const itemsData = [
         name: "Margherita",
         price: 1000,
         desc: "Classic cheese and tomato sauce.",
-        image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=1000&auto=format&fit=crop",
+        image: "https://adminsc.pizzahut.lk//images/mainmenu/3fd508d1-2a4a-4431-b243-4b7eb26dd8d4.jpg",
         variants: [
             { name: "Small", price: 1000 },
             { name: "Medium", price: 1600 },
@@ -54,7 +54,7 @@ export const itemsData = [
         name: "BBQ Chicken",
         price: 1800,
         desc: "Grilled chicken with BBQ sauce.",
-        image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=1000&auto=format&fit=crop",
+        image: "https://adminsc.pizzahut.lk//images/mainmenu/209e7feb-7c0b-4fc4-8019-ab2a9e3406a9.jpg",
         variants: [
             { name: "Small", price: 1000 },
             { name: "Medium", price: 1600 },
@@ -67,7 +67,7 @@ export const itemsData = [
         name: "Pepperoni Feast",
         price: 1500,
         desc: "Spicy pepperoni with mozzarella cheese.",
-        image: "https://images.unsplash.com/photo-1628840042765-356cda07504e?q=80&w=1000&auto=format&fit=crop",
+        image: "https://adminsc.pizzahut.lk//images/mainmenu/1bf84662-1902-4b94-9078-2da46056904f.jpg",
         variants: [
             { name: "Small", price: 1000 },
             { name: "Medium", price: 1600 },
@@ -80,7 +80,7 @@ export const itemsData = [
         category: "Side Items",
         name: "Garlic Bread",
         desc: "Crunchy bread with garlic butter",
-        image: "https://images.unsplash.com/photo-1573140247632-f84660f67126?q=80&w=1000",
+        image: "https://images.unsplash.com/photo-1598785244280-7a428600d053?q=80&w=1138&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         variants: [
         { name: "4 Pcs", price: 450 },
         { name: "6 Pcs", price: 650 }
@@ -103,7 +103,7 @@ export const itemsData = [
         category: "Beverages",
         name: "Coca Cola",
         desc: "Chilled soft drink",
-        image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?q=80&w=1000",
+        image: "https://images.unsplash.com/photo-1624552184280-9e9631bbeee9?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         variants: [
         { name: "400ml", price: 150 },
         { name: "500ml", price: 200 },
@@ -116,7 +116,7 @@ export const itemsData = [
         category: "Beverages",
         name: "Mango Juice",
         desc: "Fresh mango nectar",
-        image: "https://images.unsplash.com/photo-1623594838634-a957262453e0?q=80&w=1000",
+        image: "https://images.unsplash.com/photo-1697642452436-9c40773cbcbb?q=80&w=765&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         variants: [
         { name: "Small Cup", price: 300 },
         { name: "Large Cup", price: 500 }
@@ -128,7 +128,7 @@ export const itemsData = [
         category: "Desserts",
         name: "Chocolate Lava Cake",
         desc: "Warm cake with molten chocolate",
-        image: "https://images.unsplash.com/photo-1617305855058-29e612c3006a?q=80&w=1000",
+        image: "https://adminsc.pizzahut.lk//images/mainmenu/586cf80f-66d9-4d1d-bcaf-93055721b6ef.jpg",
         variants: [
         { name: "1 Pc", price: 450 }
         ]
@@ -137,9 +137,9 @@ export const itemsData = [
     {
         id: 12,
         category: "Combo Ideas",
-        name: "Couple Pack",
+        name: "Combo Pack",
         desc: "1 Medium Pizza + 2 Cokes + Garlic Bread",
-        image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=1000",
+        image: "https://pinoycupidgifts.com/wp-content/uploads/2024/05/Pizza-Combo-with-Coke-by-Shakeys.jpg",
         variants: [
         { name: "Standard", price: 2500 }
         ]

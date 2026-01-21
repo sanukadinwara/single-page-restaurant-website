@@ -7,7 +7,7 @@ function Menu({ openModel }){
 
     const categories = [
         { name: "Pizza", icon: "🍕" },
-        { name: "Side Items", icon: "🍟" },
+        { name: "Side Items", icon: "🍟", },
         { name: "Beverages", icon: "🥤" },
         { name: "Desserts", icon: "🍰" },
         { name: "Combo Ideas", icon: "🍱" }
@@ -36,7 +36,8 @@ function Menu({ openModel }){
                             borderRadius: '20px',
                             border: '1px solid #ff9f1c',
                             background: activeCategory === cat.name ? '#ff9f1c' : 'transparent',
-                            color: activeCategory === cat.name ? 'black' : 'white',
+                            color: 'black', 
+                            fontWeight: 'bold',
                             cursor: 'pointer',
                             transition: '0.3s'
                         }}
