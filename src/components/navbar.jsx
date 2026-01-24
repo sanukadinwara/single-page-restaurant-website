@@ -1,42 +1,51 @@
-import React from 'react';
-import { FaShoppingCart, FaHeart, FaClipboardList } from 'react-icons/fa';
-import '../App.css'; 
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { FaShoppingCart, FaHeart, FaClipboardList, FaBars, FaTimes } from 'react-icons/fa'; 
+import '../App.css';
 
-function Navbar({ cartCount, onCartClick, favoriteCount, onFavClick, onOrdersClick }) {
+const Navbar = ({ cartCount, toggleCart, toggleFavorites, toggleMyOrders }) => {
+  
+  const [isMobile, setIsMobile] = useState(false);
+
   return (
     <nav className="navbar">
       
       <div className="nav-left">
-        <h1>PizzaPalace 🍕</h1>
+        <button className="mobile-menu-icon" onClick={() => setIsMobile(!isMobile)}>
+          {isMobile ? <FaTimes /> : <FaBars />}
+        </button>
+
+        <h1 className="logo">Pizza Palace 🍕</h1>
       </div>
 
-      <ul className="links">
-        <li><a href="#home">Home</a></li>
-        <li><a href="#about">About</a></li>
-        <li><a href="#menu">Menu</a></li>
+      <ul className={isMobile ? "nav-links-mobile" : "nav-links"} onClick={() => setIsMobile(false)}>
+        <li><Link to="/">Home</Link></li>
+        <li><a href="#menu">About</a></li>
+        <li><a href="#about">Menu</a></li>
         <li><a href="#reviews">Reviews</a></li>
-        <li><a href="#footer">Contact</a></li> 
+        <li><a href="#contact">Contact</a></li>
       </ul>
 
-      <div className="nav-right">
+      <div className="nav-icons">
+        <div className="icon-wrapper" onClick={toggleMyOrders}>
+            <FaClipboardList className="nav-icon" />
+            <span className="tooltip">My Orders</span>
+        </div>
+
+        <div className="icon-wrapper" onClick={toggleFavorites}>
+            <FaHeart className="nav-icon" />
+            <span className="tooltip">Favorites</span>
+        </div>
         
-        <div className="nav-icon" onClick={onOrdersClick} style={{marginRight: '20px'}} title="My Orders">
-            <FaClipboardList size={22} />
-        </div>
-
-        <div className="nav-icon" onClick={onFavClick} style={{marginRight: '20px'}} title="Favorites">
-          <FaHeart size={24} />
-          {favoriteCount > 0 && <span className="icon-badge">{favoriteCount}</span>}
-        </div>
-
-        <div className="nav-icon" onClick={onCartClick} title="Cart">
-            <FaShoppingCart size={24} />
-            {cartCount > 0 && <span className="icon-badge">{cartCount}</span>}
+        <div className="icon-wrapper cart-icon-wrapper" onClick={toggleCart}>
+            <FaShoppingCart className="nav-icon" />
+            {cartCount > 0 && <span className="cart-count">{cartCount}</span>}
+            <span className="tooltip">Cart</span>
         </div>
       </div>
 
     </nav>
   );
-}
+};
 
 export default Navbar;
