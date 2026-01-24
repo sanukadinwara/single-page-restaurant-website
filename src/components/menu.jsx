@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { itemsData } from "../data/data";
+import { menuItems } from "../data/data";
+import { FaHeart, FaRegHeart } from 'react-icons/fa';
 
-function Menu({ openModel }){
+function Menu({ openModel, favorites, toggleFavorite }){
 
     const [activeCategory, setActiveCategory] = useState("Pizza");
 
@@ -13,7 +14,7 @@ function Menu({ openModel }){
         { name: "Combo Ideas", icon: "🍱" }
     ];
 
-    const filteredItems = itemsData.filter(item => item.category === activeCategory);
+    const filteredItems = menuItems.filter(item => item.category === activeCategory);
 
     const handleOrder = (pizzaName, price) => {
         const phoneNumber = "94771234567";
@@ -50,8 +51,28 @@ function Menu({ openModel }){
             <div className="menu-container">
                 {filteredItems.map((item) => (
                     <div key={item.id} className="pizza-card">
-                        <img src={item.image} alt={item.name}/>
+                        <div className="image-container" style={{position: 'relative'}}>
+                            <img 
+                                src={item.image} 
+                                alt={item.name} 
+                                style={{width: '100%', height: '200px', objectFit: 'cover', borderRadius: '15px 15px 0 0'}} 
+                            />
+                            
+                            <button 
+                                className="heart-btn" 
+                                onClick={(e) => {
+                                    e.stopPropagation(); 
+                                    toggleFavorite(item.id);
+                                }}
+                            >
+                                {favorites.includes(item.id) ? 
+                                    <FaHeart color="red" size={20} /> : 
+                                    <FaRegHeart color="gray" size={20} />
+                                }
+                            </button>
+                            </div>
                         <div className="card-body">
+                            
                             <h3>{item.name}</h3>
                             <p>{item.desc}</p>
                             

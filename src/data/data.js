@@ -1,9 +1,9 @@
-export const itemsData = [
+export const menuItems = [
     {
         id: 1,
         category: "Pizza",
-        name: "Chicken Pizza",
-        desc: "Spicy chicken with mozzarella cheese",
+        name: "Tandoori Chicken",
+        desc: "Tender chicken, roasted peppers, creamy mozzarella, and a touch of garlic herbs.",
         image: "https://adminsc.pizzahut.lk//images/mainmenu/209e7feb-7c0b-4fc4-8019-ab2a9e3406a9.jpg",
         variants: [
         { name: "Small", price: 1200 },
@@ -15,7 +15,7 @@ export const itemsData = [
         id: 2,
         category: "Pizza",
         name: "Pepperoni Feast",
-        desc: "Spicy pepperoni with mozzarella cheese.",
+        desc: "Loaded pepperoni, rich tomato sauce, and bubbling mozzarella.",
         image: "https://images.unsplash.com/photo-1628840042765-356cda07504e?q=80&w=1000&auto=format&fit=crop",
         variants: [
             { name: "Small", price: 1200 },
@@ -27,7 +27,7 @@ export const itemsData = [
         id: 3,
         category: "Pizza",
         name: "Veggie Supreme",
-        desc: "Onions, capsicum, tomato & olives",
+        desc: "Fresh bell peppers, mushrooms, onions, olives, and melted mozzarella.",
         image: "https://adminsc.pizzahut.lk//images/mainmenu/2688c78f-e854-49b8-a3c3-d84171f501c2.jpg",
         variants: [
             { name: "Small", price: 1000 },
@@ -40,7 +40,7 @@ export const itemsData = [
         category: "Pizza",
         name: "Margherita",
         price: 1000,
-        desc: "Classic cheese and tomato sauce.",
+        desc: "Classic tomato sauce, fresh mozzarella, and fragrant basil.",
         image: "https://adminsc.pizzahut.lk//images/mainmenu/3fd508d1-2a4a-4431-b243-4b7eb26dd8d4.jpg",
         variants: [
             { name: "Small", price: 1000 },
@@ -53,7 +53,7 @@ export const itemsData = [
         category: "Pizza",
         name: "BBQ Chicken",
         price: 1800,
-        desc: "Grilled chicken with BBQ sauce.",
+        desc: "Smoky BBQ sauce, juicy chicken, red onions, and melted mozzarella.",
         image: "https://adminsc.pizzahut.lk//images/mainmenu/209e7feb-7c0b-4fc4-8019-ab2a9e3406a9.jpg",
         variants: [
             { name: "Small", price: 1000 },
@@ -64,9 +64,9 @@ export const itemsData = [
     {
         id: 6,
         category: "Pizza",
-        name: "Pepperoni Feast",
+        name: "Sausages & Onion",
         price: 1500,
-        desc: "Spicy pepperoni with mozzarella cheese.",
+        desc: "Italian sausage, sweet onions, and melted mozzarella",
         image: "https://adminsc.pizzahut.lk//images/mainmenu/1bf84662-1902-4b94-9078-2da46056904f.jpg",
         variants: [
             { name: "Small", price: 1000 },
@@ -142,6 +142,16 @@ export const itemsData = [
         image: "https://pinoycupidgifts.com/wp-content/uploads/2024/05/Pizza-Combo-with-Coke-by-Shakeys.jpg",
         variants: [
         { name: "Standard", price: 2500 }
+        ]
+    },
+    {
+        id: 13,
+        category: "Side Items",
+        name: "French Fries",
+        desc: "Crispy golden potato sticks, lightly salted",
+        image: "https://images.pexels.com/photos/15656541/pexels-photo-15656541.jpeg",
+        variants: [
+        { name: "Standard", price: 400 }
         ]
     }
     ];

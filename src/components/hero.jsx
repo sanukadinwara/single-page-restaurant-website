@@ -1,23 +1,23 @@
-import React from "react";
+import React from 'react';
+import '../App.css'; 
 
-function Hero(){
+function Hero() {
+  return (
+    <section className="hero" id="home">
+      
+        <h1>Taste the Magic in Every Slice!</h1>
+        
+        <p>
+          Freshly baked with secret spices, overloaded with premium cheese, <br />
+          and delivered piping hot to your doorstep.
+        </p>
 
-    const scrollToMenu = () => {
-        const menuSection = document.getElementById("menu");
-        if (menuSection) {
-            menuSection.scrollIntoView({behavior: "smooth"});
-        }
-    };
-
-    return(
-        <section id="home" className="hero">
-            <div className="hero-content">
-                <h1>Best Pizza in Town</h1>
-                <p>Hot, Spicy & Cheesy!</p>
-                <button onClick={scrollToMenu}>Order Now</button>
-            </div>
-        </section>
-    );
+        <a href="#menu">
+            <button>Order Now</button>
+        </a>
+        
+    </section>
+  );
 }
 
 export default Hero;

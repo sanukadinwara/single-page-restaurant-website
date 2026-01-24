@@ -24,7 +24,7 @@ function Footer() {
   };
 
   return (
-    <footer id="contact" className="footer">
+    <footer className="footer" id="footer">
       <div className="footer-container">
         
         <div className="footer-flex-wrapper">

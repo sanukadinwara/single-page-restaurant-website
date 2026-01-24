@@ -1,74 +1,57 @@
-import React from "react";
-import { FaTrash } from "react-icons/fa";
+import React from 'react';
+import { FaTimes, FaTrash } from 'react-icons/fa';
+import '../App.css'; 
 
-function Cart({ cartItems, onClose, removeFromCart}){
+// මෙතන වරහන් ඇතුලේ 'cart' සහ 'handleCheckoutClick' තියෙන්නම ඕන
+const Cart = ({ cartItems, onClose, removeFromCart, handleCheckoutClick, cart }) => {
 
-    const totalPrice = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+  // ආරක්‍ෂිත පියවරක්: cart හෝ cartItems දෙකෙන් ඕනම එකක් ආවොත් ඒක ගන්නවා.
+  const finalCart = cart || cartItems || [];
 
-    const checkoutAll = () => {
-        const phoneNumber = "94771234567";
-        
-        let message = "👋 Hi! I would like to place an order:\n\n";
-
-        cartItems.forEach((item, index) => {
-        message += `${index + 1}. *${item.name}* (x${item.quantity}) - Rs. ${(item.price * item.quantity).toFixed(2)}\n`;
-        });
-
-        message += `\n💰 *Total Bill: Rs. ${totalPrice.toFixed(2)}*`;
-
-        const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-        window.open(url, "_blank");
-    };
-
-    return(
-        <div className="cart-overlay">
-            <div className="cart-model">
-                <div className="cart-header">
-                    <h2>Your Cart</h2>
-                    <button className="close-btn" onClick={onClose}>X</button>
-                </div>
-                <div className="cart-body">
-                    {cartItems.length === 0 ? (
-                        <div className="empty-cart">
-                            <p>Your cart is empty!</p>
-                        </div>
-                    ) : (
-                        <ul className="cart-items-list">
-                            {cartItems.map((item) => (
-                                <li key={item.id} className="cart-item">
-                                    <div className="item-info">
-                                        <span>{item.name}
-                                            <span style={{fontSize: "0.85rem", color: "#ff9f1c", marginLeft: "5px"}}>
-                                            (x{item.quantity})
-                                            </span>
-                                        </span>
-                                        <span className="item-price">Rs. {(item.price * item.quantity).toFixed(2)}</span>
-                                    </div>
-                                    <button 
-                                        className="remove-btn"
-                                        onClick={() => removeFromCart(item.id)}
-                                    >
-                                        <FaTrash />
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    )    
-                }
-                </div>
-
-                <div className="cart-footer">
-                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '15px', fontWeight: 'bold', fontSize: '1.2rem'}}>
-                        <span>Total:</span>
-                        <span>Rs. {totalPrice.toFixed(2)}</span>
-                    </div>
-                    <button className="checkout-btn" disabled={cartItems.length == 0} onClick={checkoutAll}>
-                        Checkout via WhatsApp
-                    </button>
-                </div>
-            </div>
+  return (
+    <div className="cart-overlay">
+      <div className="cart-modal">
+        <div className="cart-header">
+          <h2>Your Cart ({finalCart.length})</h2>
+          <button className="close-btn" onClick={onClose}>
+            <FaTimes />
+          </button>
         </div>
-    )
-}
+
+        <div className="cart-items">
+          {finalCart.length === 0 ? (
+            <p className="empty-cart">Your cart is empty!</p>
+          ) : (
+            finalCart.map((item) => (
+              <div key={item.id} className="cart-item">
+                <img src={item.image} alt={item.name} />
+                <div className="item-details">
+                  <h4>{item.name}</h4>
+                  <p>Rs. {item.price} x {item.quantity}</p>
+                </div>
+                <button 
+                  className="remove-btn" 
+                  onClick={() => removeFromCart(item.id)}
+                >
+                  <FaTrash />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="cart-footer">
+          <h3>
+            Total: Rs. {finalCart.reduce((acc, item) => acc + (item.price * item.quantity), 0).toFixed(2)}
+          </h3>
+          
+          <button className="checkout-btn" onClick={handleCheckoutClick}>
+            Continue via WhatsApp 
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default Cart;
