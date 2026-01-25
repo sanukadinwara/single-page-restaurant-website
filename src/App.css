@@ -2913,6 +2913,42 @@
   .admin-card p {
     font-size: 1.5rem !important; /* අංකය ටිකක් පොඩි කරන්න */
   }
+
+  @media screen and (max-width: 768px) {
+
+  /* --- FIX 1: Stats Card උස සමාන කිරීම --- */
+  .admin-card {
+    height: 100% !important; /* කාඩ් එක Grid එකේ උසට සමාන කරන්න */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important; /* මැදට ගන්න */
+    min-height: 110px !important; /* අවම උසක් ලබා දෙන්න */
+  }
+
+  /* --- FIX 2: Newsletter Overflow (කැපෙන එක) හදමු --- */
+  .subscribe-section {
+    max-width: 100% !important; /* 350px සීමාව අයින් කරලා Screen එකට ගානට හදමු */
+    width: 100% !important;
+    padding: 0 10px !important; /* වටේට පොඩි ඉඩක් */
+  }
+
+  .subscribe-form {
+    width: 100% !important;
+    display: flex !important;
+    gap: 5px !important; /* Input සහ Button අතර හිස් තැන අඩු කරමු */
+  }
+
+  .subscribe-form input {
+    flex: 1 !important; /* ඉතුරු ඉඩ ඔක්කොම Input එකට ගන්න */
+    width: auto !important;
+    min-width: 0 !important; /* කැපෙන්න නොදී හිර කරගන්න */
+  }
+
+  .subscribe-form button {
+    flex-shrink: 0 !important; /* බට්න් එක හැකිලෙන්න දෙන්න එපා */
+    padding: 10px 15px !important;
+  }
+}
 }
 
 
