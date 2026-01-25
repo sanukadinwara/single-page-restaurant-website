@@ -4,7 +4,7 @@ import { toast } from 'react-hot-toast';
 
 // Icons Imports
 import { IoBarChartSharp, IoStatsChart, IoLogOut, IoFlashSharp, IoTime } from "react-icons/io5"; 
-import { FaBoxOpen, FaPizzaSlice, FaScroll, FaPlusSquare, FaClipboardList, FaCloudUploadAlt, FaCalendarAlt, FaImages } from "react-icons/fa";
+import { FaBoxOpen, FaPizzaSlice, FaScroll, FaPlusSquare, FaClipboardList, FaCloudUploadAlt, FaCalendarAlt, FaImages, FaBars, FaTimes } from "react-icons/fa";
 import { MdOutlineMenuBook, MdWavingHand, MdStorefront } from "react-icons/md";
 import { FaPencil, FaTrash } from "react-icons/fa6";
 
@@ -17,7 +17,10 @@ import { Bar, Pie } from 'react-chartjs-2';
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
 function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState('dashboard'); 
+  const [activeTab, setActiveTab] = useState('dashboard');
+  
+  // --- NEW: Sidebar Toggle State for Mobile ---
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // --- States for Menu Form ---
   const [isEditing, setIsEditing] = useState(false);
@@ -179,8 +182,9 @@ function AdminDashboard() {
   // --- RENDER FUNCTIONS ---
 
   const renderDashboard = () => {
-    const uniqueCustomers = new Set(orders.map(o => o.customer.trim() + o.phone.trim())).size;
+  const uniqueCustomers = new Set(orders.map(o => o.customer.trim() + o.phone.trim())).size;
     return (
+
         <div className="admin-content fade-in">
         <h2><MdWavingHand /> Welcome Back, Admin!</h2>
         <div className="stats-grid">
@@ -378,21 +382,39 @@ function AdminDashboard() {
 
   return (
     <div className="dashboard-container">
-      <div className="sidebar">
+      
+      {/* 1. MOBILE TOGGLE BUTTON */}
+      <button 
+        className="sidebar-toggle-btn" 
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+      >
+        {isSidebarOpen ? <FaTimes /> : <FaBars />}
+      </button>
+
+      {/* 2. OVERLAY (Click to close) */}
+      {isSidebarOpen && (
+        <div className="admin-overlay" onClick={() => setIsSidebarOpen(false)}></div>
+      )}
+
+      {/* 3. SIDEBAR */}
+      <div className={`sidebar ${isSidebarOpen ? "active" : ""}`}>
         <h2 className="sidebar-logo">🍕 Admin Panel</h2>
         <ul>
-          <li className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}><IoBarChartSharp /> Dashboard</li>
-          <li className={activeTab === 'orders' ? 'active' : ''} onClick={() => setActiveTab('orders')}><FaBoxOpen /> Orders</li>
-          <li className={activeTab === 'menu' ? 'active' : ''} onClick={() => setActiveTab('menu')}><MdOutlineMenuBook /> Menu Manager</li>
+          <li className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => { setActiveTab('dashboard'); setIsSidebarOpen(false); }}><IoBarChartSharp /> Dashboard</li>
+          <li className={activeTab === 'orders' ? 'active' : ''} onClick={() => { setActiveTab('orders'); setIsSidebarOpen(false); }}><FaBoxOpen /> Orders</li>
+          <li className={activeTab === 'menu' ? 'active' : ''} onClick={() => { setActiveTab('menu'); setIsSidebarOpen(false); }}><MdOutlineMenuBook /> Menu Manager</li>
           <li className="logout" onClick={() => window.location.href = '/'}><IoLogOut /> Logout</li>
         </ul>
       </div>
+
+      {/* 4. MAIN AREA */}
       <div className="main-area">
         {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'orders' && renderOrders()}
         {activeTab === 'menu' && renderMenu()}
       </div>
 
+      {/* Modals */}
       {showDeleteModal && (
         <div className="modal-overlay">
             <div className="delete-modal"><div className="delete-icon-circle">⚠️</div><h3>Are you sure?</h3><p>Do you really want to delete this item?</p><div className="delete-actions"><button className="cancel-btn-modal" onClick={() => setShowDeleteModal(false)}>Cancel</button><button className="confirm-delete-btn" onClick={confirmDelete}>Delete</button></div></div>
