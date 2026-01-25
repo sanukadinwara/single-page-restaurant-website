@@ -2726,3 +2726,85 @@
     right: -5px;
   }
 }
+
+/* =========================================
+   MOBILE GRID OPTIMIZATION (පහළට දිග වැඩි වීම වැළැක්වීම)
+   ========================================= */
+@media screen and (max-width: 768px) {
+  
+  /* --- 1. Menu Items දෙක බැගින් පෙන්වීම --- */
+  .menu-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* තීරු 2ක් */
+    gap: 10px;
+    padding: 0 5px;
+  }
+
+  .pizza-card {
+    width: 100% !important;
+    min-height: auto; /* ස්ථිර උස අයින් කරන්න */
+    margin-bottom: 0;
+  }
+
+  .pizza-card img {
+    height: 120px; /* පින්තූරය පොඩි කරන්න */
+  }
+
+  .card-body {
+    padding: 8px;
+  }
+
+  .card-body h3 {
+    font-size: 0.95rem;
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; /* දිග නම කැපෙන්න */
+  }
+
+  .card-body p {
+    font-size: 0.7rem;
+    line-height: 1.1;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 5px;
+  }
+
+  .price-tag {
+    font-size: 1rem;
+    margin-bottom: 5px;
+  }
+
+  .action-buttons {
+    flex-direction: column; /* බට්න් උඩ යට පෙන්වන්න (ඉඩ මදි නිසා) */
+    gap: 5px;
+  }
+  
+  .action-buttons button {
+    width: 100%;
+    padding: 5px;
+    font-size: 0.8rem;
+  }
+
+  /* --- 2. Stats (කවුන්ට් වෙන පෙට්ටි) 4ක් ලෙස පෙන්වීම --- */
+  .stats-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* තීරු 2ක් */
+    gap: 10px;
+  }
+
+  .stat-card {
+    width: 100%;
+    padding: 15px 5px;
+    margin-bottom: 0;
+  }
+
+  .stat-icon {
+    font-size: 1.5rem;
+  }
+
+  .stat-number {
+    font-size: 1.5rem;
+  }
+}
