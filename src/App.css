@@ -2892,27 +2892,37 @@
   .stats-grid {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important; /* සමාන කොටස් 2ක් */
-    gap: 10px !important; /* මැද හිස් තැන */
-    margin-bottom: 20px;
+    gap: 15px !important; /* මැද හිස් තැන */
+    align-items: stretch;
   }
 
   /* 2. කාඩ් එකේ සයිස් එක ගානට හදාගන්නවා */
   .admin-card {
-    height: 100%;
+    width: 100%;
+    margin: 0;
+    aspect-ratio: 1.5/1;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    min-height: 110px;
+    align-items: center;
+    padding: 10px;
   }
 
   /* 3. කාඩ් එකේ අකුරු ටිකක් පොඩි කරමු ලස්සනට පේන්න */
   .admin-card h3 {
-    font-size: 0.85rem !important; /* මාතෘකාව පොඩි කරන්න */
-    white-space: nowrap; /* දිගට යන්න දෙන්න එපා */
+    font-size: 0.8rem !important;
+    margin-bottom: 5px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
   }
 
   .admin-card p {
-    font-size: 1.5rem !important; /* අංකය ටිකක් පොඩි කරන්න */
+    font-size: 1.6rem !important;
+    margin: 0;
+    line-height: 1;
   }
 
   @media screen and (max-width: 768px) {
