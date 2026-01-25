@@ -233,7 +233,7 @@
     justify-content: space-between;
     align-items: center;
     background-color: #1a1a1a;
-    padding: 0 20px;
+    padding: 1 rem 5%;
     position: fixed;
     top: 0;
     left: 0;
@@ -256,6 +256,8 @@
     font-family: 'Poppins', cursive; 
     font-size: 1.8rem; 
     font-weight: 400;
+    white-space: nowrap;
+    gap: 10px;
     margin: 0;
     cursor: pointer;
     text-shadow: 2px 2px 0px rgba(0,0,0,0.3); 
