@@ -2892,22 +2892,18 @@
   .stats-grid {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important; /* සමාන කොටස් 2ක් */
-    gap: 15px !important; /* මැද හිස් තැන */
-    align-items: center;
-    margin-bottom: 20px;
+    gap: 12px !important; /* මැද හිස් තැන */
   }
 
   /* 2. කාඩ් එකේ සයිස් එක ගානට හදාගන්නවා */
   .admin-card {
-    width: 100%;
-    margin: 0;
-    height: 140px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1)
+    height: auto !important; 
+    min-height: 100% !important; 
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important; 
+    align-items: center !important;
+    padding: 15px 5px !important;
   }
 
   /* 3. කාඩ් එකේ අකුරු ටිකක් පොඩි කරමු ලස්සනට පේන්න */
