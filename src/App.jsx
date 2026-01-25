@@ -12,7 +12,7 @@ import Favorites from './components/‍MyFav';
 import { Toaster, toast } from 'react-hot-toast';
 import Reviews from './components/MyReviews';
 import { menuItems } from './data/data'; 
-import MyOrders from './components/MyOrders';
+import MyOrders from './components/OrderList';
 import PromoBanner from './components/PromoBanner';
 import Stats from './components/Stats';
 import AdminLogin from './pages/AdminLogin';
