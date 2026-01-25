@@ -127,7 +127,6 @@ const MainShop = () => {
         toggleFavorites={() => setShowFavorites(true)}
         toggleMyOrders={() => setShowMyOrders(true)}
       />
-
       <PromoBanner />
       <Hero/>
       

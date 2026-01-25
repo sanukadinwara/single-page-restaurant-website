@@ -26,8 +26,8 @@ const Navbar = ({ cartCount, toggleCart, toggleFavorites, toggleMyOrders }) => {
       {/* 2. මැද: ලින්ක් ටික (CSS එකට අනුව Mobile View එක මාරු වෙනවා) */}
       <ul className={isMobile ? "nav-links-mobile" : "nav-links"} onClick={() => setIsMobile(false)}>
         <li><Link to="/" onClick={scrollToTop}>Home</Link></li>
-        <li><a href="#menu">About</a></li>
-        <li><a href="#about">Menu</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#menu">Menu</a></li>
         <li><a href="#reviews">Reviews</a></li>
         <li><a href="#contact">Contact</a></li>
       </ul>
