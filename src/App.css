@@ -2898,10 +2898,11 @@
 
   /* 2. කාඩ් එකේ සයිස් එක ගානට හදාගන්නවා */
   .admin-card {
-    width: 100% !important; /* Grid එකට අනුව හැඩ ගැසෙන්න */
-    padding: 15px !important; /* ඇතුලේ ඉඩ ටිකක් අඩු කරන්න */
-    min-width: auto !important; /* පරණ min-width අයින් කරන්න */
-    margin-bottom: 0 !important;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 110px;
   }
 
   /* 3. කාඩ් එකේ අකුරු ටිකක් පොඩි කරමු ලස්සනට පේන්න */
@@ -2915,15 +2916,6 @@
   }
 
   @media screen and (max-width: 768px) {
-
-  /* --- FIX 1: Stats Card උස සමාන කිරීම --- */
-  .admin-card {
-    height: 100% !important; /* කාඩ් එක Grid එකේ උසට සමාන කරන්න */
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important; /* මැදට ගන්න */
-    min-height: 110px !important; /* අවම උසක් ලබා දෙන්න */
-  }
 
   /* --- FIX 2: Newsletter Overflow (කැපෙන එක) හදමු --- */
   .subscribe-section {
