@@ -2698,7 +2698,7 @@
       display: flex;
       align-items: center;
       justify-content: flex-end; /* අයිකන් ටික දකුණු පැත්තටම තල්ලු කරන්න */
-      gap: 12px; /* අයිකන් 3 අතර (Order -> Heart -> Cart) සමාන දුරක් තියන්න */
+      gap: 2px; /* අයිකන් 3 අතර (Order -> Heart -> Cart) සමාන දුරක් තියන්න */
       width: auto; /* අයිකන් ටික ලඟින් තියාගන්න */
     }
   
