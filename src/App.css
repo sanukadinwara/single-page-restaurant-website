@@ -2893,36 +2893,37 @@
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important; /* සමාන කොටස් 2ක් */
     gap: 15px !important; /* මැද හිස් තැන */
-    align-items: stretch;
+    align-items: center;
+    margin-bottom: 20px;
   }
 
   /* 2. කාඩ් එකේ සයිස් එක ගානට හදාගන්නවා */
   .admin-card {
     width: 100%;
     margin: 0;
-    aspect-ratio: 1.5/1;
+    height: 140px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     padding: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1)
   }
 
   /* 3. කාඩ් එකේ අකුරු ටිකක් පොඩි කරමු ලස්සනට පේන්න */
   .admin-card h3 {
-    font-size: 0.8rem !important;
-    margin-bottom: 5px;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    width: 100%;
+    ont-size: 0.8rem !important;
+    margin-bottom: 8px !important;
+    text-align: center !important;
+    color: #666 !important;
   }
 
   .admin-card p {
-    font-size: 1.6rem !important;
-    margin: 0;
-    line-height: 1;
+    font-size: 1.3rem !important; /* ෆෝන් එකට ගැලපෙන සයිස් එකක් */
+    font-weight: 700 !important;
+    margin: 0 !important;
+    line-height: 1.2 !important;
+    text-align: center !important;
   }
 
   @media screen and (max-width: 768px) {
