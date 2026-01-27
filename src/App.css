@@ -2719,11 +2719,12 @@
   }
   
   .cart-count {
-    font-size: 0.7rem;
-    width: 16px;
-    height: 16px;
-    top: -5px;
-    right: -5px;
+    top: 4px !important;   /* උඩට වැඩි නම් මේ අගය 0px හෝ 5px කරන්න */
+    right: 2px !important; /* දකුණට වැඩි නම් මෙය අඩු වැඩි කරන්න */
+    width: 18px !important;  /* බෝලෙ සයිස් එක ටිකක් පොඩි කරමු */
+    height: 18px !important;
+    font-size: 10px !important; /* අකුරු පොඩි කරමු */
+    line-height: 18px !important; /* අකුරු මැදට ගන්න */
   }
 }
 
@@ -2892,26 +2893,24 @@
   .stats-grid {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important; /* සමාන කොටස් 2ක් */
-    gap: 12px !important; /* මැද හිස් තැන */
+    gap: 10px !important; /* මැද හිස් තැන */
+    width: 100%;
+    padding-right: 0;
+    box-sizing: border-box;
   }
 
   /* 2. කාඩ් එකේ සයිස් එක ගානට හදාගන්නවා */
   .admin-card {
-    height: auto !important; 
-    min-height: 100% !important; 
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important; 
-    align-items: center !important;
-    padding: 15px 5px !important;
+    width: 100% !important;
+    min-width: auto !important; /* කලින් තිබ්බ ස්ථිර පළල අයින් කිරීම */
+    margin: 0 !important;
+    padding: 15px 10px !important; /* ඇතුලේ ඉඩ ටිකක් අඩු කරමු */
+    height: auto !important; /* උස අවශ්‍ය ප්‍රමාණයට */
   }
 
   /* 3. කාඩ් එකේ අකුරු ටිකක් පොඩි කරමු ලස්සනට පේන්න */
   .admin-card h3 {
-    ont-size: 0.8rem !important;
-    margin-bottom: 8px !important;
-    text-align: center !important;
-    color: #666 !important;
+    font-size: 1rem !important;
   }
 
   .admin-card p {
