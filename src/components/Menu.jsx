@@ -1,8 +1,8 @@
-import React, { useState } from "react";
-import { menuItems } from "../data/data";
+import React, { useState, useEffect } from "react";
 import { FaHeart, FaRegHeart } from 'react-icons/fa';
 
-function Menu({ openModel, favorites, toggleFavorite }){
+// 🔥 Receive 'menuItems' and 'isShopOpen' as props from App.jsx
+function Menu({ menuItems, openModel, favorites, toggleFavorite, isShopOpen }){
 
     const [activeCategory, setActiveCategory] = useState("Pizza");
 
@@ -14,14 +14,10 @@ function Menu({ openModel, favorites, toggleFavorite }){
         { name: "Combo Ideas", icon: "🍱" }
     ];
 
-    const filteredItems = menuItems.filter(item => item.category === activeCategory);
-
-    const handleOrder = (pizzaName, price) => {
-        const phoneNumber = "94771234567";
-        const message = `Hi! I want to order: ${pizzaName} (Rs. ${price.toFixed(2)})`;
-        const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-        window.open(url, "_blank");
-    };
+    // 🔥 Filter items based on active category
+    const filteredItems = menuItems.filter(item => 
+        item.category?.toLowerCase() === activeCategory.toLowerCase()
+    );
 
     return(
         <section id="menu" className="menu-section">
@@ -37,7 +33,7 @@ function Menu({ openModel, favorites, toggleFavorite }){
                             borderRadius: '20px',
                             border: '1px solid #ff9f1c',
                             background: activeCategory === cat.name ? '#ff9f1c' : 'transparent',
-                            color: 'black', 
+                            color: activeCategory === cat.name ? '#333333' : '#333333', // Text color fix
                             fontWeight: 'bold',
                             cursor: 'pointer',
                             transition: '0.3s'
@@ -49,13 +45,28 @@ function Menu({ openModel, favorites, toggleFavorite }){
             </div>
 
             <div className="menu-container">
+                
+                {/* 1. If menuItems is empty (Loading state from App.jsx) */}
+                {menuItems.length === 0 && (
+                    <p style={{color:'white', textAlign:'center'}}>Loading Menu...</p>
+                )}
+
+                {/* 2. If loaded but no items in this category */}
+                {menuItems.length > 0 && filteredItems.length === 0 && (
+                    <p style={{color:'white', textAlign:'center'}}>
+                        No items found in {activeCategory}. <br/>
+                        (Check Database Category Names)
+                    </p>
+                )}
+
                 {filteredItems.map((item) => (
                     <div key={item.id} className="pizza-card">
                         <div className="image-container" style={{position: 'relative'}}>
                             <img 
-                                src={item.image} 
+                                src={item.image_url || item.image} 
                                 alt={item.name} 
                                 style={{width: '100%', height: '200px', objectFit: 'cover', borderRadius: '15px 15px 0 0'}} 
+                                onError={(e) => {e.target.src = 'https://via.placeholder.com/300?text=No+Image'}}
                             />
                             
                             <button 
@@ -70,23 +81,35 @@ function Menu({ openModel, favorites, toggleFavorite }){
                                     <FaRegHeart color="gray" size={20} />
                                 }
                             </button>
-                            </div>
+                        </div>
+
                         <div className="card-body">
-                            
                             <h3>{item.name}</h3>
-                            <p>{item.desc}</p>
+                            <p className="pizza-desc">
+                                {item.description || item.desc || "No description available"}
+                            </p>
                             
                             <div className="price-tag">
-                                From Rs. {item.variants[0].price.toFixed(2)}
+                                {item.variants && item.variants.length > 0 ? (
+                                    `From Rs. ${Number(item.variants[0].price).toFixed(2)}`
+                                ) : (
+                                    `Rs. ${item.price ? Number(item.price).toFixed(2) : "0.00"}`
+                                )}
                             </div>
                             
                             <div className="action-buttons">                            
                                 <button 
-                                    className="add-btn"
-                                    onClick={() => openModel(item)}
-                                    style={{width: '100%'}}
+                                    className="add-btn" 
+                                    onClick={() => openModel(item)} 
+                                    disabled={!isShopOpen} // 🔥 Disable if Shop is Closed
+                                    style={{
+                                        width: '100%', 
+                                        backgroundColor: isShopOpen ? '#ffca28' : '#555',
+                                        cursor: isShopOpen ? 'pointer' : 'not-allowed',
+                                        color: isShopOpen ? 'black' : '#ccc'
+                                    }}
                                 >
-                                    Select Options ➕
+                                    {isShopOpen ? 'Add to Cart ➕' : 'Shop Closed 🔒'}
                                 </button>
                             </div>
                         </div>

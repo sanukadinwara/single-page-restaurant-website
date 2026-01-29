@@ -1,6 +1,7 @@
 import React, { useState } from 'react'; 
 import { FaPhoneAlt, FaEnvelope, FaFacebook, FaInstagram } from 'react-icons/fa';
 import {Toaster, toast} from 'react-hot-toast';
+import { supabase } from '../supabaseClient';
 
 function Footer() {
   
@@ -13,13 +14,32 @@ function Footer() {
     { id: 4, icon: <FaInstagram />, text: "@pizzapalace_lk", href: "https://instagram.com" }
   ];
 
-  const handleSubscribe = (e) => {
+  // 🔥 UPDATED: Save Email to Database
+  const handleSubscribe = async (e) => {
     e.preventDefault();
-    if(email) {
-        toast.success(`Thank you! ${email} has been subscribed to our offers.`);
-        setEmail(""); 
-    } else {
+    
+    // 1. Validation
+    if (!email) {
         toast.error("Please enter a valid email!");
+        return;
+    }
+
+    // 2. Insert into Supabase
+    const { error } = await supabase
+        .from('subscribers')
+        .insert([{ email: email }]); // Database Column name must be 'email'
+
+    // 3. Handle Success/Error
+    if (error) {
+        if (error.code === '23505') { // Code for Duplicate Entry
+            toast.error("You are already subscribed! ✅");
+        } else {
+            console.error(error);
+            toast.error("Subscription failed. Please try again.");
+        }
+    } else {
+        toast.success(`Thank you! ${email} has been subscribed. 📩`);
+        setEmail(""); // Clear input
     }
   };
 

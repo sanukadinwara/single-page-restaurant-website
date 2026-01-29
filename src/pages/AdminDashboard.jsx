@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../App.css'; 
 import { toast } from 'react-hot-toast';
+import { supabase } from '../supabaseClient'; 
+import { useNavigate } from 'react-router-dom';
+import emailjs from '@emailjs/browser';
 
 // Icons Imports
 import { IoBarChartSharp, IoStatsChart, IoLogOut, IoFlashSharp, IoTime } from "react-icons/io5"; 
-import { FaBoxOpen, FaPizzaSlice, FaScroll, FaPlusSquare, FaClipboardList, FaCloudUploadAlt, FaCalendarAlt, FaImages, FaBars, FaTimes } from "react-icons/fa";
+import { FaBoxOpen, FaPizzaSlice, FaScroll, FaPlusSquare, FaClipboardList, FaCloudUploadAlt, FaCalendarAlt, FaImages, FaBars, FaTimes, FaFileDownload, FaEdit, FaTrashAlt, FaPlusCircle, FaComments, FaStar } from "react-icons/fa";
 import { MdOutlineMenuBook, MdWavingHand, MdStorefront } from "react-icons/md";
 import { FaPencil, FaTrash } from "react-icons/fa6";
 
@@ -14,12 +17,15 @@ import {
 } from 'chart.js';
 import { Bar, Pie } from 'react-chartjs-2';
 
+// PDF Imports
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
 function AdminDashboard() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
-  
-  // --- NEW: Sidebar Toggle State for Mobile ---
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // --- States for Menu Form ---
@@ -29,48 +35,258 @@ function AdminDashboard() {
   const [category, setCategory] = useState('Pizza');
   const [desc, setDesc] = useState('');
   const [image, setImage] = useState(''); 
-  const [imagePreview, setImagePreview] = useState(null); 
   const [variants, setVariants] = useState([{ name: '', price: '' }]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
 
   // --- States for Orders ---
   const [orderSearch, setOrderSearch] = useState('');
-  const [showReceivedModal, setShowReceivedModal] = useState(false);
-  const [receivedId, setReceivedId] = useState(null);
   
   // --- States for Charts ---
   const [salesView, setSalesView] = useState('Weekly');
   const [productView, setProductView] = useState('Weekly');
 
   // --- States for Promo Banner ---
+  const [promoId, setPromoId] = useState(null); 
   const [promoImage, setPromoImage] = useState('');
-  const [promoHeading, setPromoHeading] = useState('HOT & SPICY');
-  const [promoSub, setPromoSub] = useState('Pizza of the Month');
-  const [promoCode, setPromoCode] = useState('GET20OFF');
-  const [isUploadingPromo, setIsUploadingPromo] = useState(false);
+  const [promoHeading, setPromoHeading] = useState('');
+  const [promoSub, setPromoSub] = useState('');
+  const [promoCode, setPromoCode] = useState('');
+  
+  // New States for Multiple Banners
+  const [bannerList, setBannerList] = useState([]); 
+  const [showBannerSelector, setShowBannerSelector] = useState(false); 
+  const [bannerActionType, setBannerActionType] = useState(''); 
 
   // --- States for Store Hours & Holiday ---
+  const [storeSettingsId, setStoreSettingsId] = useState(null);
   const [openTime, setOpenTime] = useState('08:00');
   const [closeTime, setCloseTime] = useState('22:00');
   const [holidayStart, setHolidayStart] = useState('');
   const [holidayEnd, setHolidayEnd] = useState('');
   const [isHolidayActive, setIsHolidayActive] = useState(false);
 
-  // --- MOCK DATA ---
-  const [menuList, setMenuList] = useState([
-    { id: 1, category: "Pizza", name: "Tandoori Chicken", desc: "Tender chicken...", image: "https://adminsc.pizzahut.lk//images/mainmenu/209e7feb-7c0b-4fc4-8019-ab2a9e3406a9.jpg", variants: [{ name: "Small", price: 1200 }, { name: "Medium", price: 1900 }, { name: "Large", price: 2800 }] },
-    { id: 2, category: "Pizza", name: "Pepperoni Feast", desc: "Loaded pepperoni...", image: "https://images.unsplash.com/photo-1628840042765-356cda07504e?q=80&w=1000", variants: [{ name: "Small", price: 1200 }, { name: "Medium", price: 1900 }, { name: "Large", price: 2800 }] },
-    { id: 3, category: "Beverages", name: "Coca Cola", desc: "Chilled soft drink", image: "https://images.unsplash.com/photo-1624552184280-9e9631bbeee9", variants: [{ name: "400ml", price: 150 }, { name: "1L", price: 350 }] }
-  ]);
+  // --- REAL DATA STATES ---
+  const [menuList, setMenuList] = useState([]); 
+  const [orders, setOrders] = useState([]); 
+  const [reviewsList, setReviewsList] = useState([]);
 
-  const [orders, setOrders] = useState([
-    { id: 1001, date: "2026-01-23", time: "10:30 AM", customer: "Tony Stark", phone: "077-1234567", address: "No 5, Main St, Nugegoda", items: "Tandoori Chicken (L) x 1, Coke x 2", total: 3100, status: "Pending" },
-    { id: 1002, date: "2026-01-23", time: "11:15 AM", customer: "Natasha Romanoff", phone: "071-9876543", address: "24/B, Temple Rd, Maharagama", items: "Veggie Supreme (M) x 1", total: 1600, status: "Cooking" },
-    { id: 1003, date: "2026-01-23", time: "12:00 PM", customer: "Steve Rogers", phone: "076-5554441", address: "Wifi Zone, Colombo 07", items: "Cheese Pizza (S) x 2, Garlic Bread", total: 2450, status: "Delivered" },
-    { id: 998, date: "2026-01-22", time: "08:00 PM", customer: "Peter Parker", phone: "070-1112223", address: "Kottawa", items: "BBQ Chicken (L)", total: 2800, status: "Received" },
-    { id: 828, date: "2025-12-28", time: "07:10 PM", customer: "Bruce Banner", phone: "070-1122334", address: "Havelock Town", items: "Tandoori Chicken (L)", total: 2800, status: "Received" }
-  ]);
+  // 🔥 CLOUDINARY UPLOAD FUNCTION
+  const uploadToCloudinary = async (file) => {
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME; // 👇 env එකෙන් ගැනීම
+    const uploadPreset = import.meta.env.VITE_CLOUDINARY_PRESET;   // 👇 env එකෙන් ගැනීම
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", uploadPreset);
+    formData.append("cloud_name", cloudName);
+
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { // URL එකත් වෙනස් වුනා
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      return data.secure_url; // මේක තමයි ඉමේජ් ලින්ක් එක
+    } catch (error) {
+      console.error("Upload Error:", error);
+      toast.error("Image Upload Failed!");
+      return null;
+    }
+  };
+
+  // 🔥 MAIN HANDLER FOR FILE INPUTS
+  const handleImageFileChange = async (e, type) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const loadingToast = toast.loading("Uploading Image... 📤");
+
+    const url = await uploadToCloudinary(file);
+    
+    toast.dismiss(loadingToast);
+
+    if (url) {
+        if (type === 'MENU') {
+            setImage(url); // Menu Image එකට සෙට් වෙනවා
+        } else if (type === 'PROMO') {
+            setPromoImage(url); // Promo Banner එකට සෙට් වෙනවා
+        }
+        toast.success("Image Uploaded! ✅");
+    }
+  };
+
+  // --- 1. Load Data on Startup ---
+  useEffect(() => {
+    const isAdmin = sessionStorage.getItem('pizzaAdminLogin');
+    if (!isAdmin) {
+      navigate('/admin');
+    } else {
+      fetchMenu(); 
+      fetchOrders();
+      fetchAllBanners();
+      fetchStoreSettings();
+      fetchAllReviews();
+    }
+  }, []);
+
+  // --- 2. Real-Time Listener ---
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-dashboard-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        (payload) => {
+          fetchOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // --- Fetch Functions ---
+  const fetchMenu = async () => {
+    let { data, error } = await supabase.from('menu_items').select('*').order('id', { ascending: false });
+    if (!error) setMenuList(data);
+  };
+
+  const fetchOrders = async () => {
+    let { data, error } = await supabase.from('orders').select('*').order('id', { ascending: false });
+    if (!error) setOrders(data);
+  };
+
+  const fetchAllReviews = async () => {
+    let { data } = await supabase.from('reviews').select('*').order('created_at', { ascending: false });
+    if (data) setReviewsList(data);
+  };
+
+  const fetchAllBanners = async () => {
+    let { data, error } = await supabase.from('promo_settings').select('*').order('id', { ascending: false });
+    if (data) {
+        setBannerList(data);
+        if(data.length === 1) {
+            loadBannerToForm(data[0]);
+        }
+    }
+  };
+
+  const fetchStoreSettings = async () => {
+    console.log("🔍 Fetching store settings...");
+    
+    let { data, error } = await supabase.from('store_settings').select('*');
+    
+    console.log("Database response:", { data, error });
+
+    if (error) {
+        console.error("❌ Error fetching store settings:", error);
+        toast.error("Error loading store settings");
+        return;
+    }
+
+    if (!data || data.length === 0) {
+        console.log("⚠️ No settings found, creating default...");
+        // Create default settings
+        const { data: newData, error: insertError } = await supabase
+            .from('store_settings')
+            .insert([{
+                open_time: '08:00:00',
+                close_time: '22:00:00',
+                is_holiday_active: false
+            }])
+            .select();
+        
+        console.log("Insert response:", { newData, insertError });
+        
+        if (insertError) {
+            console.error("❌ Failed to create default settings:", insertError);
+            toast.error("Failed to create store settings");
+            return;
+        }
+        
+        if (newData && newData.length > 0) {
+            loadStoreSettings(newData[0]);
+            toast.success("Store settings created!");
+        }
+    } else {
+        console.log("✅ Settings loaded:", data[0]);
+        loadStoreSettings(data[0]);
+    }
+  };
+
+  const sendBulkEmail = async (subject, mainMessage) => {
+      const { data: subs } = await supabase.from('subscribers').select('email');
+      if (!subs || subs.length === 0) return;
+
+      const fullMessage = `${mainMessage}\n\nFor more information, visit https://pizzapalacelk.vercel.app/.`;
+
+      // EmailJS Loop (Free package එකේ ලිමිට් තියෙන්න පුලුවන්)
+      subs.forEach(sub => {
+          const templateParams = {
+              to_email: sub.email,
+              subject: subject,
+              message: fullMessage
+          };
+          
+          // මෙතන ඔයාගේ EmailJS Keys දාන්න
+          emailjs.send(
+              import.meta.env.VITE_EMAILJS_SERVICE_ID, // 👇 env එකෙන්
+              import.meta.env.VITE_EMAILJS_TEMPLATE_ID, // 👇 env එකෙන්
+              templateParams, 
+              import.meta.env.VITE_EMAILJS_PUBLIC_KEY   // 👇 env එකෙන්
+          )
+              .then(() => console.log(`Email sent to ${sub.email}`))
+              .catch((err) => console.error("Email failed", err));
+      });
+      toast.success("Newsletter Sent to Subscribers! 📨");
+  };
+
+  const loadStoreSettings = (settings) => {
+    console.log("📥 Loading settings to form:", settings);
+    
+    setStoreSettingsId(settings.id);
+    setOpenTime(settings.open_time ? settings.open_time.slice(0, 5) : '08:00');
+    setCloseTime(settings.close_time ? settings.close_time.slice(0, 5) : '22:00');
+    setIsHolidayActive(settings.is_holiday_active || false);
+    
+    if (settings.holiday_start) {
+        const startDate = new Date(settings.holiday_start);
+        setHolidayStart(formatDateTimeLocal(startDate));
+    }
+    if (settings.holiday_end) {
+        const endDate = new Date(settings.holiday_end);
+        setHolidayEnd(formatDateTimeLocal(endDate));
+    }
+  };
+
+  const formatDateTimeLocal = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  const loadBannerToForm = (banner) => {
+      setPromoId(banner.id);
+      setPromoHeading(banner.heading);
+      setPromoSub(banner.sub_heading);
+      setPromoCode(banner.promo_code);
+      setPromoImage(banner.image_url);
+  };
+
+  const clearBannerForm = () => {
+      setPromoId(null);
+      setPromoHeading('');
+      setPromoSub('');
+      setPromoCode('');
+      setPromoImage('');
+  };
 
   // --- HELPER FUNCTIONS ---
   const formatDateTime = (dateString) => {
@@ -79,198 +295,758 @@ function AdminDashboard() {
     return date.toLocaleString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: 'numeric', minute: '2-digit', hour12: true });
   };
 
+
   const handleImageUpload = (e, type) => {
     const file = e.target.files[0];
     if (!file) return;
     const uploadToast = toast.loading("Uploading Image...");
-    if (type === 'promo') setIsUploadingPromo(true);
-
     setTimeout(() => {
         const fakeUrl = URL.createObjectURL(file); 
-        if (type === 'menu') { setImage(fakeUrl); setImagePreview(fakeUrl); } 
-        else if (type === 'promo') { setPromoImage(fakeUrl); setIsUploadingPromo(false); }
+        if (type === 'promo') { setPromoImage(fakeUrl); }
         toast.dismiss(uploadToast);
         toast.success("Image Uploaded Successfully!");
     }, 1500);
   };
 
-  const setHolidayMode = () => {
-    if (!holidayStart || !holidayEnd) return toast.error("Please select both start and end times!");
-    setIsHolidayActive(true);
-    toast.success("Holiday Mode Activated!");
+  // 🔥 BANNER ACTION HANDLERS
+  const handleUpdateClick = () => {
+      if (bannerList.length === 0) {
+          toast.error("No banners to update!");
+          return;
+      }
+      if (bannerList.length === 1) {
+          loadBannerToForm(bannerList[0]);
+          toast("Editing existing banner", { icon: '✏️' });
+      } else {
+          setBannerActionType('UPDATE');
+          setShowBannerSelector(true);
+      }
   };
 
-  const clearHolidayMode = () => {
-    setIsHolidayActive(false); setHolidayStart(''); setHolidayEnd(''); toast("Holiday Mode Cleared");
+  const handleBannerDeleteClick = () => {
+      if (bannerList.length === 0) {
+          toast.error("No banners to delete!");
+          return;
+      }
+      if (bannerList.length === 1) {
+          setDeleteId(bannerList[0].id); 
+          setBannerActionType('DELETE_CONFIRM'); 
+          setShowDeleteModal(true); 
+      } else {
+          setBannerActionType('DELETE');
+          setShowBannerSelector(true);
+      }
   };
 
-  // --- CHART DATA ---
+  const handleBannerSelect = (banner) => {
+      setShowBannerSelector(false);
+      if (bannerActionType === 'UPDATE') {
+          loadBannerToForm(banner);
+          toast("Selected banner loaded for editing", { icon: '✅' });
+      } else if (bannerActionType === 'DELETE') {
+          setDeleteId(banner.id);
+          setBannerActionType('DELETE_CONFIRM');
+          setShowDeleteModal(true); 
+      }
+  };
+
+  // 🔥 DATABASE OPERATIONS
+  const saveBannerToDB = async () => {
+    const bannerData = {
+        heading: promoHeading,
+        sub_heading: promoSub,
+        promo_code: promoCode,
+        image_url: promoImage 
+    };
+
+    if (promoId) {
+        const { error } = await supabase.from('promo_settings').update(bannerData).eq('id', promoId);
+        if (!error) { toast.success("Banner Updated!"); fetchAllBanners(); } 
+        else toast.error("Update Failed!");
+    } else {
+        const { error } = await supabase.from('promo_settings').insert([bannerData]);
+        if (!error) { toast.success("New Banner Added!"); fetchAllBanners(); clearBannerForm(); }
+        else toast.error("Failed to add!");
+    }
+
+    if (!error) {
+        sendBulkEmail(
+                "Special Promotion! 🎉", 
+                `A special offer from us! ${promoHeading} - ${promoSub}. Code: ${promoCode}`
+            );
+        }        
+  };
+
+  // 🔥 STORE SETTINGS SAVE - FIXED VERSION
+  const saveDailyHours = async () => {
+    if (!openTime || !closeTime) {
+        toast.error("Please set both opening and closing times!");
+        return;
+    }
+
+    console.log("💾 Saving daily hours...", { openTime, closeTime, storeSettingsId });
+
+    const storeData = {
+        open_time: openTime + ':00',
+        close_time: closeTime + ':00'
+    };
+
+    console.log("Data to save:", storeData);
+
+    try {
+        if (storeSettingsId) {
+            // Update existing
+            console.log("Updating existing settings with ID:", storeSettingsId);
+            const { data, error } = await supabase
+                .from('store_settings')
+                .update(storeData)
+                .eq('id', storeSettingsId)
+                .select();
+            
+            console.log("Update response:", { data, error });
+            
+            if (error) {
+                console.error("❌ Update error:", error);
+                toast.error(`Update failed: ${error.message}`);
+                return;
+            }
+            
+            toast.success("Daily Hours Updated Successfully! ✅");
+            fetchStoreSettings();
+        } else {
+            // Insert new
+            console.log("Creating new settings...");
+            const { data, error } = await supabase
+                .from('store_settings')
+                .insert([{
+                    ...storeData,
+                    is_holiday_active: false
+                }])
+                .select();
+            
+            console.log("Insert response:", { data, error });
+            
+            if (error) {
+                console.error("❌ Insert error:", error);
+                toast.error(`Failed to save: ${error.message}`);
+                return;
+            }
+            
+            if (data && data.length > 0) {
+                setStoreSettingsId(data[0].id);
+                toast.success("Daily Hours Saved Successfully! ✅");
+                fetchStoreSettings();
+            }
+        }
+    } catch (err) {
+        console.error("❌ Exception:", err);
+        toast.error("An error occurred while saving");
+    }
+  };
+
+  const setHolidayMode = async () => {
+    if (!holidayStart || !holidayEnd) {
+        toast.error("Please select both start and end date/time!");
+        return;
+    }
+
+    const startDate = new Date(holidayStart);
+    const endDate = new Date(holidayEnd);
+
+    if (endDate <= startDate) {
+        toast.error("End time must be after start time!");
+        return;
+    }
+
+    console.log("🏖️ Activating holiday mode...", { startDate, endDate, storeSettingsId });
+
+    const holidayData = {
+        is_holiday_active: true,
+        holiday_start: startDate.toISOString(),
+        holiday_end: endDate.toISOString()
+    };
+
+    console.log("Holiday data:", holidayData);
+
+    try {
+        if (storeSettingsId) {
+            const { data, error } = await supabase
+                .from('store_settings')
+                .update(holidayData)
+                .eq('id', storeSettingsId)
+                .select();
+            
+            console.log("Holiday update response:", { data, error });
+            
+            if (error) {
+                console.error("❌ Holiday activation error:", error);
+                toast.error(`Failed: ${error.message}`);
+                return;
+            }
+            
+            setIsHolidayActive(true);
+            toast.success("Holiday Mode Activated! 🏖️", { duration: 3000 });
+            fetchStoreSettings();
+        } else {
+            // If no settings exist, create with holiday mode
+            const { data, error } = await supabase
+                .from('store_settings')
+                .insert([{
+                    open_time: '08:00:00',
+                    close_time: '22:00:00',
+                    ...holidayData
+                }])
+                .select();
+            
+            console.log("Holiday insert response:", { data, error });
+            
+            if (error) {
+                console.error("❌ Holiday insert error:", error);
+                toast.error(`Failed: ${error.message}`);
+                return;
+            }
+            
+            if (data && data.length > 0) {
+                setStoreSettingsId(data[0].id);
+                setIsHolidayActive(true);
+                toast.success("Holiday Mode Activated! 🏖️", { duration: 3000 });
+                fetchStoreSettings();
+            }
+        }
+    } catch (err) {
+        console.error("❌ Exception:", err);
+        toast.error("An error occurred");
+    }
+
+    const startStr = new Date(holidayStart).toLocaleDateString();
+        const endStr = new Date(holidayEnd).toLocaleDateString();
+        sendBulkEmail(
+            "Shop Closing Notice 🔒", 
+            `Due to an emergency, our establishment will be closed from ${startStr} to ${endStr}. We apologize for the inconvenience.`
+        );
+        
+        fetchStoreSettings();
+  };
+
+  const clearHolidayMode = async () => {
+    if (!storeSettingsId) {
+        toast.error("No settings found!");
+        return;
+    }
+
+    console.log("🔓 Deactivating holiday mode...");
+
+    try {
+        const { data, error } = await supabase
+            .from('store_settings')
+            .update({
+                is_holiday_active: false,
+                holiday_start: null,
+                holiday_end: null
+            })
+            .eq('id', storeSettingsId)
+            .select();
+
+        console.log("Holiday clear response:", { data, error });
+
+        if (error) {
+            console.error("❌ Clear error:", error);
+            toast.error(`Failed: ${error.message}`);
+            return;
+        }
+
+        setIsHolidayActive(false);
+        setHolidayStart('');
+        setHolidayEnd('');
+        toast.success("Holiday Mode Deactivated! Shop is Open ✅");
+        fetchStoreSettings();
+    } catch (err) {
+        console.error("❌ Exception:", err);
+        toast.error("An error occurred");
+    }
+  };
+
+  // --- SHARED DELETE FUNCTION ---
+  const confirmDelete = async () => {
+      let error = null;
+      
+      // 1. Banner Delete Logic
+      if (deleteType === 'BANNER') {
+          ({ error } = await supabase.from('promo_settings').delete().eq('id', deleteId));
+          if (!error) { 
+              fetchAllBanners(); 
+              clearBannerForm(); 
+          }
+      } 
+      // 2. Menu Item Delete Logic
+      else if (deleteType === 'MENU') {
+          ({ error } = await supabase.from('menu_items').delete().eq('id', deleteId));
+          if (!error) {
+              fetchMenu();
+          }
+      } 
+      // 3. Review Delete Logic (New)
+      else if (deleteType === 'REVIEW') {
+          ({ error } = await supabase.from('reviews').delete().eq('id', deleteId));
+          if (!error) {
+              fetchAllReviews();
+          }
+      }
+
+      // Success/Error Message
+      if (!error) {
+          toast.success("Deleted Successfully!");
+      } else {
+          toast.error("Delete Failed!");
+      }
+      
+      // Reset Modal State
+      setShowDeleteModal(false);
+      setDeleteId(null);
+      setDeleteType('');
+      setBannerActionType('');
+  };
+
+  // Menu Delete Trigger
+  const handleDeleteClick = (id) => { 
+      setDeleteId(id); 
+      setBannerActionType('');
+      setShowDeleteModal(true); 
+  };
+
+  // ==========================================
+  // 🔥 CHART DATA LOGIC 🔥
+  // ==========================================
+
+  const getFilteredOrders = (viewType) => {
+    const now = new Date();
+    return orders.filter(order => {
+        const orderDate = new Date(order.created_at);
+        if (viewType === 'Weekly') {
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(now.getDate() - 7);
+            return orderDate >= sevenDaysAgo;
+        } else if (viewType === 'Monthly') {
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(now.getDate() - 30);
+            return orderDate >= thirtyDaysAgo;
+        } else if (viewType === 'Annually') {
+            return orderDate.getFullYear() === now.getFullYear();
+        }
+        return true;
+    });
+  };
+
   const getSalesChartData = () => {
+    const filtered = getFilteredOrders(salesView);
     let labels = [];
-    let data = [];
+    let dataValues = [];
 
     if (salesView === 'Weekly') {
-      labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      data = [15000, 22000, 18000, 25000, 30000, 45000, 40000];
+        const today = new Date();
+        const daysMap = {};
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(today.getDate() - i);
+            const label = d.toLocaleDateString('en-US', { weekday: 'short' }); 
+            labels.push(label);
+            daysMap[label] = 0; 
+        }
+        filtered.forEach(o => {
+            const dayName = new Date(o.created_at).toLocaleDateString('en-US', { weekday: 'short' });
+            if (daysMap[dayName] !== undefined) {
+                daysMap[dayName] += (Number(o.total_price) || 0);
+            }
+        });
+        dataValues = labels.map(l => daysMap[l]);
+
     } else if (salesView === 'Monthly') {
-      labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
-      data = [120000, 145000, 130000, 160000];
-    } else if (salesView === 'Yearly') {
-      labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      data = [450000, 520000, 480000, 550000, 600000, 750000, 800000, 700000, 650000, 720000, 850000, 950000];
+        labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+        const weekData = [0, 0, 0, 0];
+        const now = new Date();
+        filtered.forEach(o => {
+            const orderDate = new Date(o.created_at);
+            const diffTime = Math.abs(now - orderDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if (diffDays <= 7) weekData[3] += (Number(o.total_price) || 0);
+            else if (diffDays <= 14) weekData[2] += (Number(o.total_price) || 0);
+            else if (diffDays <= 21) weekData[1] += (Number(o.total_price) || 0);
+            else weekData[0] += (Number(o.total_price) || 0);
+        });
+        dataValues = weekData;
+
+    } else {
+        labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const monthMap = {};
+        labels.forEach(m => monthMap[m] = 0);
+        filtered.forEach(o => {
+            const monthStr = new Date(o.created_at).toLocaleDateString('en-US', { month: 'short' });
+            if (monthMap[monthStr] !== undefined) {
+                monthMap[monthStr] += (Number(o.total_price) || 0);
+            }
+        });
+        dataValues = labels.map(l => monthMap[l]);
+    }
+
+    return { 
+        labels: labels, 
+        datasets: [{ 
+            label: `Revenue (LKR)`, 
+            data: dataValues, 
+            backgroundColor: '#ff9f1c', 
+            borderRadius: 5,
+            barThickness: salesView === 'Annually' ? 15 : 30,
+        }] 
+    };
+  };
+
+  const getSalesChartOptions = () => {
+    let stepSize = 100000; 
+    let suggestedMax = 500000; 
+
+    if (salesView === 'Monthly') {
+        stepSize = 500000; 
+        suggestedMax = 2000000; 
+    } else if (salesView === 'Annually') {
+        stepSize = 1000000; 
+        suggestedMax = 5000000; 
     }
 
     return {
-      labels,
-      datasets: [{
-        label: `Sales (${salesView}) - LKR`,
-        data: data,
-        backgroundColor: '#ff9f1c',
-        borderRadius: 5,
-      }]
+        responsive: true,
+        maintainAspectRatio: false, 
+        plugins: { legend: { display: false } },
+        scales: {
+            y: {
+                beginAtZero: true,
+                suggestedMax: suggestedMax, 
+                ticks: {
+                    stepSize: stepSize, 
+                    color: '#555',
+                    font: { weight: 'bold', size: 10 }, 
+                    callback: function(value) {
+                        if (value === 0) return '0';
+                        if (value >= 1000000) return (value / 1000000).toFixed(1).replace('.0', '') + 'M';
+                        return (value / 1000).toFixed(0) + 'k';
+                    }
+                },
+                grid: { color: '#e0e0e0' }
+            },
+            x: {
+                grid: { display: false },
+                ticks: { color: '#555', font: { size: 11 } }
+            }
+        }
     };
   };
 
   const getProductChartData = () => {
-    let data = [];
-    if (productView === 'Weekly') {
-      data = [45, 25, 20, 15, 10];
-    } else if (productView === 'Monthly') {
-      data = [200, 150, 180, 90, 60];
-    } else if (productView === 'Yearly') {
-      data = [2500, 1800, 2200, 1200, 800];
-    }
-
-    return {
-      labels: ['Chicken Pizza', 'Veggie Pizza', 'Coke', 'Garlic Bread', 'Lava Cake'],
-      datasets: [{
-        data: data,
-        backgroundColor: ['#ff9f1c', '#1a1a1a', '#d32f2f', '#28a745', '#888888'],
-        borderWidth: 1,
-      }]
+    const filtered = getFilteredOrders(productView);
+    let itemCounts = {};
+    filtered.forEach(order => {
+        if (order.items && Array.isArray(order.items)) {
+            order.items.forEach(item => {
+                const name = item.name.split('(')[0].trim(); 
+                itemCounts[name] = (itemCounts[name] || 0) + Number(item.quantity);
+            });
+        }
+    });
+    const sortedItems = Object.entries(itemCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const labels = sortedItems.map(i => i[0]);
+    const data = sortedItems.map(i => i[1]);
+    return { 
+        labels: labels.length > 0 ? labels : ['No Sales'], 
+        datasets: [{ 
+            data: data.length > 0 ? data : [1], 
+            backgroundColor: ['#ff9f1c', '#1a1a1a', '#d32f2f', '#28a745', '#888888'], 
+            borderWidth: 1 
+        }] 
     };
   };
 
-  // --- CRUD & ORDER LOGIC ---
-  const resetForm = () => { setItemName(''); setCategory('Pizza'); setDesc(''); setImage(''); setImagePreview(null); setVariants([{ name: '', price: '' }]); setIsEditing(false); setCurrentId(null); };
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    const dateStr = new Date().toLocaleDateString();
+    doc.setFontSize(18);
+    doc.text(`Pizza Shop - Sales Report (${salesView})`, 14, 22);
+    doc.setFontSize(11);
+    doc.text(`Generated on: ${dateStr}`, 14, 30);
+
+    const salesData = getFilteredOrders(salesView);
+    const totalRevenue = salesData.reduce((acc, o) => acc + (Number(o.total_price) || 0), 0);
+    
+    doc.autoTable({
+        startY: 40,
+        head: [['Metric', 'Value']],
+        body: [
+            ['Report Period', salesView],
+            ['Total Orders', salesData.length],
+            ['Total Revenue', `Rs. ${totalRevenue.toLocaleString()}`],
+            ['Active Customers', new Set(salesData.map(o => o.customer_phone)).size]
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: [255, 159, 28] } 
+    });
+
+    let itemCounts = {};
+    salesData.forEach(order => {
+        if (order.items) {
+            order.items.forEach(item => {
+                itemCounts[item.name] = (itemCounts[item.name] || 0) + Number(item.quantity);
+            });
+        }
+    });
+    const topItems = Object.entries(itemCounts).sort((a, b) => b[1] - a[1]);
+
+    doc.text("Items Sold Summary", 14, doc.lastAutoTable.finalY + 15);
+    doc.autoTable({
+        startY: doc.lastAutoTable.finalY + 20,
+        head: [['Item Name', 'Quantity Sold']],
+        body: topItems,
+        theme: 'striped'
+    });
+    doc.save(`Report_${salesView}.pdf`);
+    toast.success("Report Downloaded!");
+  };
+
+  // ==========================================
+  // CRUD & Order Logic
+  // ==========================================
+  const resetForm = () => { setItemName(''); setCategory('Pizza'); setDesc(''); setImage(''); setVariants([{ name: '', price: '' }]); setIsEditing(false); setCurrentId(null); };
   const handleVariantChange = (index, field, value) => { const newVariants = [...variants]; newVariants[index][field] = value; setVariants(newVariants); };
   const addVariant = () => setVariants([...variants, { name: '', price: '' }]);
   const removeVariant = (index) => { const newVariants = variants.filter((_, i) => i !== index); setVariants(newVariants); };
-  const handleDeleteClick = (id) => { setDeleteId(id); setShowDeleteModal(true); };
-  const confirmDelete = () => { setMenuList(menuList.filter(item => item.id !== deleteId)); setShowDeleteModal(false); setDeleteId(null); toast.success("Item Deleted Successfully! 🗑️"); };
-  const handleEdit = (item) => { setIsEditing(true); setCurrentId(item.id); setItemName(item.name); setCategory(item.category); setImage(item.image); setImagePreview(item.image); setDesc(item.desc || ''); setVariants(item.variants); toast("Editing Mode On", { icon: '✏️' }); };
-  const handleSave = () => {
-    if (!itemName) return toast.error("Item Name is required!");
-    if (!image) return toast.error("Please upload an image!");
-    const newItemData = { name: itemName, category, desc, image, variants };
-    if (isEditing) { setMenuList(menuList.map(item => item.id === currentId ? { ...item, ...newItemData } : item)); toast.success("Item Updated!"); } 
-    else { setMenuList([...menuList, { id: Date.now(), ...newItemData }]); toast.success("New Item Added!"); }
-    resetForm();
-  };
-  const handleStatusChange = (id, newStatus) => { const statusToSet = newStatus === 'Received' ? 'Pending_Received' : newStatus; setOrders(orders.map(order => order.id === id ? { ...order, status: statusToSet } : order)); };
-  const saveOrderStatus = (id) => { const order = orders.find(o => o.id === id); if (order.status === 'Pending_Received') { setReceivedId(id); setShowReceivedModal(true); } else { toast.success(`Order #${id} updated!`); } };
-  const confirmReceived = () => { setOrders(orders.map(o => o.id === receivedId ? { ...o, status: 'Received' } : o)); setShowReceivedModal(false); setReceivedId(null); toast.success("Order moved to History!"); };
-  const cancelReceived = () => { setOrders(orders.map(o => o.id === receivedId ? { ...o, status: 'Delivered' } : o)); setShowReceivedModal(false); setReceivedId(null); toast("Returned to Delivered"); };
 
-  const activeOrders = orders.filter(o => o.status !== 'Received');
-  const pastOrders = orders.filter(o => o.status === 'Received');
+  const handleSave = async () => {
+    if (!itemName) return toast.error("Item Name is required!");
+    if (!image) return toast.error("Please enter Image URL!");
+    const newItemData = { name: itemName, category, description: desc, image_url: image, variants };
+
+    if (isEditing) {
+        const { error } = await supabase.from('menu_items').update(newItemData).eq('id', currentId);
+        if(!error) { toast.success("Item Updated!"); fetchMenu(); resetForm(); }
+        else { toast.error("Update Failed!"); }
+    } else {
+        const { error } = await supabase.from('menu_items').insert([newItemData]);
+        if(!error) { toast.success("New Item Added!"); fetchMenu(); resetForm(); }
+        else { toast.error("Insert Failed!"); }
+    }
+
+    if (!isEditing) {
+            sendBulkEmail(
+                "New Menu Item Alert!", 
+                `We've added a delicious new ${itemName} to the menu! Come and try it.`
+            );
+    }
+  };
+
+  const handleEdit = (item) => { 
+      setIsEditing(true); setCurrentId(item.id); setItemName(item.name); setCategory(item.category); 
+      setImage(item.image_url || item.image || ''); setDesc(item.description || item.desc || ''); 
+      setVariants(item.variants || []); toast("Editing Mode On", { icon: '✏️' }); 
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const saveOrderStatus = async (id, newStatus) => {
+    const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', id);
+    if (!error) toast.success(`Order #${id} Updated!`);
+    else toast.error("Update Failed!");
+  };
+
+  const handleLogout = () => { sessionStorage.removeItem('pizzaAdminLogin'); navigate('/'); };
+
+  const activeOrders = orders.filter(o => o.status !== 'Completed');
+  const pastOrders = orders.filter(o => o.status === 'Completed');
   const filteredPastOrders = pastOrders.filter(order => {
       const search = orderSearch.toLowerCase();
-      return (order.customer.toLowerCase().includes(search) || order.phone.includes(search) || order.id.toString().includes(search));
+      const name = order.customer_name || "";
+      const phone = order.customer_phone || "";
+      return (name.toLowerCase().includes(search) || phone.includes(search) || order.id.toString().includes(search));
   });
 
   // --- RENDER FUNCTIONS ---
 
   const renderDashboard = () => {
-  const uniqueCustomers = new Set(orders.map(o => o.customer.trim() + o.phone.trim())).size;
-    return (
+    const totalOrdersCount = orders.length;
+    const totalEarnings = orders.reduce((acc, o) => acc + (Number(o.total_price) || 0), 0);
+    const pendingCount = orders.filter(o => o.status === 'Pending').length;
+    const uniqueCustomersCount = new Set(orders.map(o => o.customer_phone)).size;
 
+    return (
         <div className="admin-content fade-in">
-        <h2><MdWavingHand /> Welcome Back, Admin!</h2>
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+            <h2><MdWavingHand /> Welcome Back, Admin!</h2>
+        </div>
+        
         <div className="stats-grid">
-            <div className="admin-card"><h3>Total Orders</h3><p>150</p></div>
-            <div className="admin-card"><h3>Total Earnings</h3><p>Rs. 450,000</p></div>
-            <div className="admin-card"><h3>Pending Orders</h3><p className="highlight">{activeOrders.filter(o => o.status === 'Pending').length}</p></div>
-            <div className="admin-card"><h3>Total Customers</h3><p>{uniqueCustomers}</p></div>
+            <div className="admin-card"><h3>Total Orders</h3><p>{totalOrdersCount}</p></div>
+            <div className="admin-card"><h3>Total Earnings</h3><p>Rs. {totalEarnings.toLocaleString()}</p></div>
+            <div className="admin-card"><h3>Pending Orders</h3><p className="highlight">{pendingCount}</p></div>
+            <div className="admin-card"><h3>Total Customers</h3><p>{uniqueCustomersCount}</p></div>
         </div>
 
         <div className="charts-container">
-            <div className="chart-card bar-chart">
+            {/* 🔥 BAR CHART */}
+            <div className="chart-card bar-chart" style={{height: '430px'}}>
                 <div className="chart-header">
-                    <div className="chart-title-group"><IoStatsChart className="chart-icon" /><h3>Sales Overview</h3></div>
+                    <div className="chart-title-group"><IoStatsChart className="chart-icon" /><h3>Sales Analytics</h3></div>
                     <select className="chart-filter" value={salesView} onChange={(e) => setSalesView(e.target.value)}>
-                        <option value="Weekly">Weekly</option>
-                        <option value="Monthly">Monthly</option>
-                        <option value="Yearly">Yearly</option>
+                        <option value="Weekly">Last 7 Days</option>
+                        <option value="Monthly">Last 30 Days</option>
+                        <option value="Annually">This Year</option>
                     </select>
                 </div>
-                <Bar data={getSalesChartData()} options={{ responsive: true, plugins: { legend: { display: false } } }} />
+                <div style={{height: '280px', width: '100%'}}>
+                    <Bar data={getSalesChartData()} options={getSalesChartOptions()} />
+                </div>
             </div>
-            <div className="chart-card pie-chart">
+
+            {/* 🔥 PIE CHART */}
+            <div className="chart-card pie-chart" style={{height: '430px'}}>
                 <div className="chart-header">
-                    <div className="chart-title-group"><FaPizzaSlice className="chart-icon" /><h3>Best Sellers</h3></div>
+                    <div className="chart-title-group"><FaPizzaSlice className="chart-icon" /><h3>Top Selling Items</h3></div>
                     <select className="chart-filter" value={productView} onChange={(e) => setProductView(e.target.value)}>
-                        <option value="Weekly">Weekly</option>
-                        <option value="Monthly">Monthly</option>
-                        <option value="Yearly">Yearly</option>
+                        <option value="Weekly">This Week</option>
+                        <option value="Monthly">This Month</option>
+                        <option value="Annually">This Year</option>
                     </select>
                 </div>
-                <div className="pie-wrapper"><Pie data={getProductChartData()} /></div>
+                <div className="pie-wrapper" style={{height: '250px', display:'flex', justifyContent:'center'}}>
+                    <Pie data={getProductChartData()} options={{ maintainAspectRatio: false }} />
+                </div>
             </div>
         </div>
 
+        {/* PDF BUTTON */}
+        <div style={{display: 'flex', justifyContent: 'flex-end', marginTop: '40px', marginBottom: '40px'}}>
+            <button className="admin-btn-save" onClick={generatePDF} style={{backgroundColor:'#333', display:'flex', alignItems:'center', gap:'8px', padding: '12px 24px', fontSize: '1rem'}}>
+                <FaFileDownload /> Download Report
+            </button>
+        </div>
+
+        {/* 🔥 PROMO BANNER & SETTINGS */}
         <div className="settings-grid">
             <div className="settings-card promo-section">
                 <div className="section-header"><FaImages className="section-icon" /><h3>Promo Banner Manager</h3></div>
-                <div className="upload-box">
-                    <input type="file" id="promo-upload" hidden onChange={(e) => handleImageUpload(e, 'promo')} />
-                    <label htmlFor="promo-upload" className="upload-label">
-                        {promoImage ? <img src={promoImage} alt="Promo" className="promo-preview-img" /> : <div className="placeholder-content"><FaCloudUploadAlt className="upload-icon-large" /><span>Click to Upload Banner</span></div>}
-                    </label>
+                
+                <div className="upload-box" style={{flexDirection: 'column', gap:'10px'}}>
+                {/* 👇 File Input එක වෙනස් කරන්න */}
+                <input 
+                    type="file" 
+                    id="promo-upload" 
+                    hidden 
+                    onChange={(e) => handleImageFileChange(e, 'PROMO')} 
+                />
+                
+                <label htmlFor="promo-upload" className="upload-label" style={{width:'100%', overflow:'hidden', cursor:'pointer'}}>
+                    {promoImage ? (
+                        <img src={promoImage} alt="Promo" className="promo-preview-img" />
+                    ) : (
+                        <div className="placeholder-content">
+                            <FaCloudUploadAlt className="upload-icon-large" />
+                            <span>Click to Upload Image</span>
+                        </div>
+                    )}
+                </label>
+                
+                <div style={{width:'100%'}}>
+                    <label style={{fontSize:'0.85rem', color:'#666'}}>Image Link (Auto-filled):</label>
+                    <input 
+                        className="admin-input" 
+                        placeholder="https://example.com/banner.jpg" 
+                        value={promoImage} 
+                        onChange={(e)=>setPromoImage(e.target.value)} 
+                    />
                 </div>
+                </div>
+
                 <div className="promo-inputs">
-                    <div className="form-group"><label>Banner Heading</label><input type="text" className="admin-input" value={promoHeading} onChange={(e) => setPromoHeading(e.target.value)} /></div>
-                    <div className="form-group"><label>Sub Heading</label><input type="text" className="admin-input" value={promoSub} onChange={(e) => setPromoSub(e.target.value)} /></div>
-                    <div className="form-group"><label>Promo Code</label><input type="text" className="admin-input highlight-input" value={promoCode} onChange={(e) => setPromoCode(e.target.value)} /></div>
+                    <div className="form-group">
+                        <input className="admin-input" placeholder="Heading (e.g. HOT & SPICY)" value={promoHeading} onChange={(e)=>setPromoHeading(e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                        <input className="admin-input" placeholder="Sub Heading (e.g. Pizza of the Month)" value={promoSub} onChange={(e)=>setPromoSub(e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                        <input className="admin-input" placeholder="Promo Code (e.g. GET20OFF)" value={promoCode} onChange={(e)=>setPromoCode(e.target.value)} />
+                    </div>
                 </div>
-                <div className="form-actions">
-                    <button className="cancel-btn-admin" onClick={() => { setPromoImage(''); setPromoHeading(''); setPromoSub(''); setPromoCode(''); toast.success("Banner Removed") }}>Delete Banner</button>
-                    <button className="admin-btn-save" onClick={() => toast.success("Banner Updated Successfully!")}>Update Banner</button>
+                
+                {/* Action Buttons for Banner */}
+                <div className="form-actions" style={{marginTop:'10px', display:'flex', gap:'10px', flexWrap:'wrap'}}>
+                    <button className="admin-btn-save" onClick={saveBannerToDB} style={{flex:1}}>
+                        {promoId ? "Save Changes" : "Save as New Banner"}
+                    </button>
+                    {promoId && (
+                        <button className="admin-btn-save" onClick={() => { clearBannerForm(); toast("Form Cleared. Enter details to add new."); }} style={{background: '#28a745', flex:1}}>
+                            <FaPlusCircle /> Add New
+                        </button>
+                    )}
                 </div>
+                
+                <div style={{marginTop:'20px', display:'flex', gap:'10px'}}>
+                    <button 
+                        className="admin-promo-btn btn-edit-blue"
+                        onClick={handleUpdateClick} 
+                    >
+                        <FaEdit size={18} /> 
+                        <span>Select to Edit</span>
+                    </button>
+
+                    <button 
+                        className="admin-promo-btn btn-delete-red"
+                        onClick={handleBannerDeleteClick} 
+                    >
+                        <FaTrashAlt size={18} /> 
+                        <span>Select to Delete</span>
+                    </button>
+                </div>
+
             </div>
 
             <div className="settings-card store-section">
                 <div className="section-header"><MdStorefront className="section-icon" /><h3>Store Operating Hours</h3></div>
-                <div className="hours-block">
-                    <h4><IoTime /> Daily Schedule</h4>
-                    <div className="time-inputs">
-                        <div className="time-group"><label>Open Time</label><input type="time" className="admin-input" value={openTime} onChange={(e) => setOpenTime(e.target.value)} /></div>
-                        <div className="time-group"><label>Close Time</label><input type="time" className="admin-input" value={closeTime} onChange={(e) => setCloseTime(e.target.value)} /></div>
+                <div className="time-inputs" style={{display:'flex', gap:'10px', marginBottom:'15px'}}>
+                    <div style={{flex:1}}>
+                        <label style={{fontSize:'0.85rem', color:'#666', marginBottom:'5px', display:'block'}}>Opening Time</label>
+                        <input type="time" className="admin-input" value={openTime} onChange={(e) => setOpenTime(e.target.value)} />
                     </div>
-                    <button className="save-status-btn" onClick={() => toast.success(`Hours Updated!`)}>Save Daily Hours</button>
-                </div>
-                <hr className="divider" />
-                <div className="holiday-block">
-                    <h4><FaCalendarAlt /> Holiday / Temporary Closure</h4>
-                    <div className="date-inputs">
-                        <div className="form-group"><label>Start</label><input type="datetime-local" className="admin-input" value={holidayStart} onChange={(e) => setHolidayStart(e.target.value)} /></div>
-                        <div className="form-group"><label>End</label><input type="datetime-local" className="admin-input" value={holidayEnd} onChange={(e) => setHolidayEnd(e.target.value)} /></div>
+                    <div style={{flex:1}}>
+                        <label style={{fontSize:'0.85rem', color:'#666', marginBottom:'5px', display:'block'}}>Closing Time</label>
+                        <input type="time" className="admin-input" value={closeTime} onChange={(e) => setCloseTime(e.target.value)} />
                     </div>
-                    {isHolidayActive ? (
-                        <div className="holiday-active-msg">
-                            <p>⚠️ <b>Store Closed:</b> {formatDateTime(holidayStart)} to {formatDateTime(holidayEnd)}</p>
-                            <button className="remove-btn-small" style={{width: '100%', marginTop: '10px'}} onClick={clearHolidayMode}>End Holiday Mode</button>
-                        </div>
-                    ) : (
-                        <button className="admin-btn-save" style={{background: '#d32f2f'}} onClick={setHolidayMode}>Activate Holiday Mode</button>
-                    )}
-                    {isHolidayActive && (
-                        <div className="preview-msg-box">
-                            <h5>Message Preview:</h5>
-                            <p>"Due to unavoidable reasons, the store will be closed from <b>{formatDateTime(holidayStart)}</b> to <b>{formatDateTime(holidayEnd)}</b>. We apologize for any inconvenience caused."</p>
-                        </div>
-                    )}
                 </div>
+                <button className="save-status-btn" onClick={saveDailyHours} style={{width:'100%', padding:'10px', background:'#28a745', color:'#fff', border:'none', borderRadius:'5px', cursor:'pointer', fontWeight:'bold'}}>
+                    Save Daily Hours
+                </button>
+                
+                <hr className="divider" style={{margin:'25px 0', border:'none', borderTop:'1px solid #ddd'}} />
+                
+                <h4 style={{display:'flex', alignItems:'center', gap:'8px', marginBottom:'15px'}}><FaCalendarAlt /> Holiday / Temporary Closure</h4>
+                
+                {isHolidayActive && (
+                    <div style={{background:'#fff3cd', border:'1px solid #ffc107', padding:'10px', borderRadius:'5px', marginBottom:'15px', fontSize:'0.9rem'}}>
+                        ⚠️ <strong className='text-black'>Holiday Mode Active</strong>
+                    </div>
+                )}
+                
+                <div style={{marginBottom:'10px'}}>
+                    <label style={{fontSize:'0.85rem', color:'#666', marginBottom:'5px', display:'block'}}>Start Date & Time</label>
+                    <input type="datetime-local" className="admin-input" value={holidayStart} onChange={(e) => setHolidayStart(e.target.value)} />
+                </div>
+                <div style={{marginBottom:'15px'}}>
+                    <label style={{fontSize:'0.85rem', color:'#666', marginBottom:'5px', display:'block'}}>End Date & Time</label>
+                    <input type="datetime-local" className="admin-input" value={holidayEnd} onChange={(e) => setHolidayEnd(e.target.value)} />
+                </div>
+                
+                {isHolidayActive ? 
+                    <button className="btn-holiday-off" onClick={clearHolidayMode}>
+                        End Holiday Mode (Reopen Shop)
+                    </button> :
+                    <button className="admin-btn-save" style={{background: '#d32f2f', width:'100%', padding:'10px', marginTop:'10px'}} onClick={setHolidayMode}>
+                        Activate Holiday Mode
+                    </button>
+                }
             </div>
         </div>
         </div>
@@ -284,50 +1060,41 @@ function AdminDashboard() {
       <div className="table-container mb-40">
         <table className="admin-table">
             <thead>
-            <tr>
-                <th style={{width: '60px'}}>ID</th>
-                <th style={{width: '150px'}}>Date & Time</th>
-                <th style={{width: '250px'}}>Customer Details</th>
-                <th>Items & Total</th>
-                <th style={{width: '180px'}}>Status</th>
-                <th style={{width: '100px'}}>Action</th>
-            </tr>
+            <tr><th style={{width: '60px'}}>ID</th><th style={{width: '150px'}}>Date</th><th style={{width: '250px'}}>Customer</th><th>Items & Total</th><th style={{width: '150px'}}>Status</th></tr>
             </thead>
             <tbody>
             {activeOrders.map(order => (
                 <tr key={order.id}>
                 <td><strong>#{order.id}</strong></td>
-                <td><div className="date-time-box"><div className="date-text">{order.date}</div><div className="time-text">{order.time}</div></div></td>
-                <td><div className="customer-box"><div className="cust-name">{order.customer}</div><div className="cust-phone"><a href={`tel:${order.phone}`}>{order.phone}</a></div><div className="cust-addr">{order.address}</div></div></td>
-                <td><div className="items-box"><div className="item-list">{order.items}</div><div className="price-tag-large">Rs. {order.total}</div></div></td>
+                <td><div className="date-time-box"><div className="date-text">{new Date(order.created_at).toLocaleDateString()}</div><div className="time-text">{new Date(order.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div></td>
+                <td><div className="customer-box"><div className="cust-name">{order.customer_name}</div><div className="cust-phone">{order.customer_phone}</div><div className="cust-addr">{order.customer_address}</div></div></td>
+                <td><div className="items-box"><div className="item-list">{order.items && order.items.map((i,idx)=><span key={idx}>{i.name} x {i.quantity}<br/></span>)}</div><div className="price-tag-large">Rs. {order.total_price}</div></div></td>
                 <td>
-                    <select className={`status-select ${order.status === 'Pending_Received' ? 'received' : order.status.toLowerCase()}`} value={order.status === 'Pending_Received' ? 'Received' : order.status} onChange={(e) => handleStatusChange(order.id, e.target.value)}>
-                        <option value="Pending">New Order</option><option value="Cooking">Cooking</option><option value="Ready">Ready</option><option value="Delivered">Delivered</option><option value="Received">Received</option>
+                    <select className={`status-select ${order.status ? order.status.toLowerCase() : 'pending'}`} value={order.status || 'Pending'} onChange={(e) => saveOrderStatus(order.id, e.target.value)}>
+                        <option value="Pending">New</option><option value="Cooking">Cooking</option><option value="Ready">Ready</option><option value="Delivered">Delivered</option><option value="Completed">Completed</option>
                     </select>
                 </td>
-                <td><button className="save-status-btn" onClick={() => saveOrderStatus(order.id)}>Save</button></td>
                 </tr>
             ))}
-            {activeOrders.length === 0 && <tr><td colSpan="6" style={{textAlign:'center', padding:'20px'}}>No active orders!</td></tr>}
+            {activeOrders.length === 0 && <tr><td colSpan="5" style={{textAlign:'center', padding:'20px'}}>No active orders!</td></tr>}
             </tbody>
         </table>
       </div>
+      
       <div className="list-header" style={{marginTop: '40px', borderBottom: 'none'}}>
           <h3 className="section-title"><FaScroll /> Past Orders</h3>
           <input type="text" placeholder="🔍 Search History..." className="search-input" value={orderSearch} onChange={(e) => setOrderSearch(e.target.value)} />
       </div>
       <div className="table-container">
         <table className="admin-table">
-            <thead>
-            <tr><th style={{width: '60px'}}>ID</th><th style={{width: '150px'}}>Date & Time</th><th style={{width: '250px'}}>Customer Details</th><th>Items & Total</th><th style={{width: '150px'}}>Status</th></tr>
-            </thead>
+            <thead><tr><th>ID</th><th>Date</th><th>Customer</th><th>Total</th><th>Status</th></tr></thead>
             <tbody>
             {filteredPastOrders.map(order => (
                 <tr key={order.id} className="past-order-row">
                 <td><strong>#{order.id}</strong></td>
-                <td><div className="date-time-box"><div className="date-text">{order.date}</div><div className="time-text">{order.time}</div></div></td>
-                <td><div className="customer-box"><div className="cust-name">{order.customer}</div><div className="cust-phone">{order.phone}</div><div className="cust-addr">{order.address}</div></div></td>
-                <td><div className="items-box"><div className="item-list">{order.items}</div><div className="price-tag-large" style={{fontSize: '1rem', color: '#555'}}>Rs. {order.total}</div></div></td>
+                <td>{new Date(order.created_at).toLocaleDateString()}</td>
+                <td>{order.customer_name} ({order.customer_phone})</td>
+                <td>Rs. {order.total_price}</td>
                 <td><span className="status-badge completed">Completed</span></td>
                 </tr>
             ))}
@@ -343,34 +1110,51 @@ function AdminDashboard() {
       <h2><MdOutlineMenuBook /> Menu Management</h2>
       <div className="menu-grid-layout">
         <div className="add-menu-form">
-            <h3 className="form-title">
-              {isEditing ? <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><FaPencil /> Update Item</span> : <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><FaPlusSquare /> Add New Item</span>}
+            <h3 className="form-title" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {isEditing ? <><FaPencil /> Update Item</> : <><FaPlusSquare /> Add New Item</>}
             </h3>
             <div className="form-group"><label>Item Name</label><input type="text" placeholder="Item Name" className="admin-input" value={itemName} onChange={(e) => setItemName(e.target.value)} /></div>
             <div className="form-row">
-                <div className="form-group"><label>Category</label><select className="admin-input" value={category} onChange={(e) => setCategory(e.target.value)}><option value="Pizza">Pizza</option><option value="Side Items">Side Items</option><option value="Beverages">Beverages</option></select></div>
-                <div className="form-group">
-                    <label>Item Image</label>
-                    <div className="menu-upload-wrapper">
-                        <input type="file" id="menu-img-upload" hidden onChange={(e) => handleImageUpload(e, 'menu')} />
-                        <label htmlFor="menu-img-upload" className="menu-upload-label">{imagePreview ? <img src={imagePreview} alt="Preview" className="menu-thumb-preview" /> : <><FaCloudUploadAlt /> Upload</>}</label>
-                        {image && <span className="upload-success-text">Linked!</span>}
-                    </div>
-                </div>
+                <div className="form-group"><label>Category</label><select className="admin-input" value={category} onChange={(e) => setCategory(e.target.value)}><option value="Pizza">Pizza</option><option value="Side Items">Side Items</option><option value="Beverages">Beverages</option><option value="Desserts">Desserts</option><option value="Combo Ideas">Combo Ideas</option></select></div>
+            </div>
+            <div className="form-group">
+                <label>Image URL</label>
+                <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={(e) => handleImageFileChange(e, 'MENU')}
+                    style={{marginBottom:'10px', padding:'5px'}} 
+                />
+                <input type="text" placeholder="https://..." className="admin-input" value={image} onChange={(e) => setImage(e.target.value)} />
+                {image && <img src={image} alt="Preview" style={{width:'50px', height:'50px', borderRadius:'5px', marginTop:'5px', objectFit:'cover', border:'1px solid #666'}} />}
             </div>
             <div className="form-group"><label>Description</label><textarea placeholder="Description..." className="admin-input" rows="2" value={desc} onChange={(e) => setDesc(e.target.value)}></textarea></div>
-            <div className="variations-section"><label>Variations</label>{variants.map((variant, index) => (<div key={index} className="variation-row"><input type="text" placeholder="Size" className="admin-input" value={variant.name} onChange={(e) => handleVariantChange(index, 'name', e.target.value)} /><input type="number" placeholder="Price" className="admin-input" value={variant.price} onChange={(e) => handleVariantChange(index, 'price', e.target.value)} />{variants.length > 1 && <button className="remove-btn-small" onClick={() => removeVariant(index)}>❌</button>}</div>))}<button className="add-variant-btn" onClick={addVariant}>+ Add Size</button></div>
-            <div className="form-actions">{isEditing && <button className="cancel-btn-admin" onClick={resetForm}>Cancel</button>}<button className={`admin-btn-save ${isEditing ? 'update-mode' : ''}`} onClick={handleSave}>{isEditing ? 'Update Item' : 'Save Item'}</button></div>
+            <div className="variations-section">
+                <label style={{ fontWeight: 'bold' }}>Variations</label>
+                {variants.map((variant, index) => (
+                    <div key={index} className="variation-row">
+                        <input type="text" placeholder="Size" className="admin-input" value={variant.name} onChange={(e) => handleVariantChange(index, 'name', e.target.value)} />
+                        <input type="number" placeholder="Price" className="admin-input" value={variant.price} onChange={(e) => handleVariantChange(index, 'price', e.target.value)} />
+                        {variants.length > 1 && <button className="remove-btn-small" onClick={() => removeVariant(index)}>❌</button>}
+                    </div>
+                ))}
+                <button className="add-variant-btn" onClick={addVariant}>+ Add Size</button>
+            </div>
+            <div className="form-actions">{isEditing && <button className="cancel-btn-admin" onClick={resetForm}>Cancel</button>}<button className={`admin-btn-save ${isEditing ? 'update-mode' : ''}`} onClick={handleSave}>{isEditing ? 'Update' : 'Save'}</button></div>
         </div>
         <div className="menu-list-container">
             <h3><FaClipboardList /> Existing Items</h3>
             <div className="menu-items-scroll">
+                {menuList.length === 0 && <p style={{color:'#666', textAlign:'center', marginTop:'20px'}}>No items.</p>}
                 {menuList.map(item => (
                     <div key={item.id} className="menu-list-item">
-                        <div className="item-info"><h4>{item.name}</h4><span>{item.category}</span></div>
+                        <div className="item-info">
+                            <img src={item.image_url || item.image} alt="" style={{width:'40px', height:'40px', borderRadius:'5px', marginRight:'10px', objectFit:'cover'}} />
+                            <div><h4>{item.name}</h4><span>{item.category}</span></div>
+                        </div>
                         <div className="item-actions">
-                            <button className="edit-icon-btn" onClick={() => handleEdit(item)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaPencil /></button>
-                            <button className="delete-icon-btn" onClick={() => handleDeleteClick(item.id)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaTrash /></button>
+                            <button className="edit-icon-btn" onClick={() => handleEdit(item)}><FaPencil /></button>
+                            <button className="delete-icon-btn" onClick={() => handleDeleteClick(item.id)}><FaTrash /></button>
                         </div>
                     </div>
                 ))}
@@ -380,50 +1164,84 @@ function AdminDashboard() {
     </div>
   );
 
+    const renderReviews = () => (
+    <div className="admin-content fade-in">
+        <h2><FaComments /> Manage Reviews</h2>
+        <div className="table-container">
+            <table className="admin-table">
+                <thead><tr><th>Date</th><th>Name</th><th>Rating</th><th>Message</th><th>Action</th></tr></thead>
+                <tbody>
+                    {reviewsList.length === 0 && <tr><td colSpan="5" style={{textAlign:'center', padding:'20px'}}>No reviews yet.</td></tr>}
+                    {reviewsList.map(rev => (
+                        <tr key={rev.id}>
+                            <td>{new Date(rev.created_at).toLocaleDateString()}</td>
+                            <td>{rev.name}<br/><small style={{color:'#777'}}>{rev.email}</small></td>
+                            <td>
+                                <div style={{display:'flex'}}>
+                                    {[...Array(5)].map((_, i) => (
+                                        <FaStar key={i} size={12} color={i < rev.rating ? "#ffc107" : "#e4e5e9"} />
+                                    ))}
+                                </div>
+                            </td>
+                            <td style={{maxWidth:'300px'}}>{rev.message}</td>
+                            <td>
+                                <button className="delete-icon-btn" onClick={() => { setDeleteId(rev.id); setDeleteType('REVIEW'); setShowDeleteModal(true); }}>
+                                    <FaTrashAlt />
+                                </button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    </div>
+  );
+
+
   return (
     <div className="dashboard-container">
-      
-      {/* 1. MOBILE TOGGLE BUTTON */}
-      <button 
-        className="sidebar-toggle-btn" 
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-      >
-        {isSidebarOpen ? <FaTimes /> : <FaBars />}
-      </button>
-
-      {/* 2. OVERLAY (Click to close) */}
-      {isSidebarOpen && (
-        <div className="admin-overlay" onClick={() => setIsSidebarOpen(false)}></div>
-      )}
-
-      {/* 3. SIDEBAR */}
+      <button className="sidebar-toggle-btn" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>{isSidebarOpen ? <FaTimes /> : <FaBars />}</button>
+      {isSidebarOpen && <div className="admin-overlay" onClick={() => setIsSidebarOpen(false)}></div>}
       <div className={`sidebar ${isSidebarOpen ? "active" : ""}`}>
         <h2 className="sidebar-logo">🍕 Admin Panel</h2>
         <ul>
           <li className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => { setActiveTab('dashboard'); setIsSidebarOpen(false); }}><IoBarChartSharp /> Dashboard</li>
           <li className={activeTab === 'orders' ? 'active' : ''} onClick={() => { setActiveTab('orders'); setIsSidebarOpen(false); }}><FaBoxOpen /> Orders</li>
           <li className={activeTab === 'menu' ? 'active' : ''} onClick={() => { setActiveTab('menu'); setIsSidebarOpen(false); }}><MdOutlineMenuBook /> Menu Manager</li>
-          <li className="logout" onClick={() => window.location.href = '/'}><IoLogOut /> Logout</li>
+          <li className={activeTab==='reviews'?'active':''} onClick={()=>{setActiveTab('reviews');setIsSidebarOpen(false)}}><FaComments /> Reviews</li>
+          <li className="logout" onClick={handleLogout}><IoLogOut /> Logout</li>
         </ul>
       </div>
-
-      {/* 4. MAIN AREA */}
       <div className="main-area">
         {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'orders' && renderOrders()}
         {activeTab === 'menu' && renderMenu()}
+        {activeTab === 'reviews' && renderReviews()}
       </div>
-
-      {/* Modals */}
+      
+      {/* GENERIC DELETE CONFIRMATION */}
       {showDeleteModal && (
         <div className="modal-overlay">
-            <div className="delete-modal"><div className="delete-icon-circle">⚠️</div><h3>Are you sure?</h3><p>Do you really want to delete this item?</p><div className="delete-actions"><button className="cancel-btn-modal" onClick={() => setShowDeleteModal(false)}>Cancel</button><button className="confirm-delete-btn" onClick={confirmDelete}>Delete</button></div></div>
+            <div className="delete-modal"><div className="delete-icon-circle">⚠️</div><h3>Confirm Delete?</h3><p>Are you sure you want to delete this?</p><div className="delete-actions"><button className="cancel-btn-modal" onClick={() => setShowDeleteModal(false)}>Cancel</button><button className="confirm-delete-btn" onClick={confirmDelete}>Delete</button></div></div>
         </div>
       )}
-      {showReceivedModal && (
-        <div className="modal-overlay">
-            <div className="delete-modal"><div className="received-icon-circle"></div><h3>Order Received?</h3><p>Did the customer receive this order? This will move the order to <b>History</b>.</p><div className="delete-actions"><button className="cancel-btn-modal" onClick={cancelReceived}>No</button><button className="confirm-received-btn" onClick={confirmReceived}>Yes</button></div></div>
-        </div>
+
+      {/* NEW: BANNER SELECTION MODAL */}
+      {showBannerSelector && (
+          <div className="modal-overlay">
+              <div className="modal-content" style={{maxWidth:'500px'}}>
+                  <h3>Select Banner to {bannerActionType === 'UPDATE' ? 'Edit' : 'Delete'}</h3>
+                  <div style={{maxHeight:'300px', overflowY:'auto', display:'flex', flexDirection:'column', gap:'10px'}}>
+                      {bannerList.map(b => (
+                          <div key={b.id} onClick={() => handleBannerSelect(b)} style={{display:'flex', alignItems:'center', gap:'10px', padding:'10px', border:'1px solid #eee', borderRadius:'5px', cursor:'pointer', background:'#fff'}}>
+                              <img src={b.image_url} style={{width:'50px', height:'30px', objectFit:'cover', borderRadius:'3px'}} alt=""/>
+                              <div><strong>{b.heading}</strong><div style={{fontSize:'0.8rem', color:'#666'}}>{b.sub_heading}</div></div>
+                          </div>
+                      ))}
+                  </div>
+                  <button className="cancel-btn" style={{marginTop:'20px', width:'100%'}} onClick={() => setShowBannerSelector(false)}>Cancel</button>
+              </div>
+          </div>
       )}
     </div>
   );

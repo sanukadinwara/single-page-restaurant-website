@@ -48,6 +48,12 @@ const Cart = ({ cartItems, onClose, removeFromCart, handleCheckoutClick, cart })
           <button className="checkout-btn" onClick={handleCheckoutClick}>
             Continue via WhatsApp 
           </button>
+          <button 
+              className="checkout-btn" 
+              disabled={!isShopOpen || cart.length === 0}
+          >
+              {isShopOpen ? 'Place Order' : 'Shop Closed'}
+          </button>
         </div>
       </div>
     </div>
