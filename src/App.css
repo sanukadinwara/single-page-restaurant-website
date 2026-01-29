@@ -3077,7 +3077,7 @@
   /* Desktop එකේදි Sidebar එක වම් පැත්තටම හේත්තු වෙලා පේන්න තියෙන්න ඕන */
   left: 0; 
   
-  padding-top: 0px;
+  padding-top: 60px;
   z-index: 1000;
   transition: 0.3s ease-in-out; /* ලස්සනට ලිස්සලා යන effect එක */
   overflow-y: auto;
