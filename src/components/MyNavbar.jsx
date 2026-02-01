@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaShoppingCart, FaHeart, FaClipboardList, FaBars, FaTimes } from 'react-icons/fa';
+import { RiAdminFill } from "react-icons/ri";
 import '../App.css';
 
 const Navbar = ({ cartCount, toggleCart, toggleFavorites, toggleMyOrders }) => {
@@ -42,6 +43,10 @@ const Navbar = ({ cartCount, toggleCart, toggleFavorites, toggleMyOrders }) => {
             <FaShoppingCart className="nav-icon" />
             {cartCount > 0 && <span className="cart-count">{cartCount}</span>}
         </div>
+
+        <Link to="/admin" className="icon-wrapper">
+            <RiAdminFill className="nav-icon" />
+        </Link>
       </div>
 
     </nav>
