@@ -6,7 +6,6 @@ import '../App.css';
 const Navbar = ({ cartCount, toggleCart, toggleFavorites, toggleMyOrders }) => {
   const [isMobile, setIsMobile] = useState(false);
 
-  // Home ලින්ක් එක එබුවම උඩටම යන එක
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setIsMobile(false);
@@ -15,7 +14,6 @@ const Navbar = ({ cartCount, toggleCart, toggleFavorites, toggleMyOrders }) => {
   return (
     <nav className="navbar">
       
-      {/* 1. වම් පැත්ත: මෙනු අයිකන් එක සහ ලෝගෝ එක */}
       <div className="nav-left">
         <button className="mobile-menu-icon" onClick={() => setIsMobile(!isMobile)}>
           {isMobile ? <FaTimes /> : <FaBars />}
@@ -23,7 +21,6 @@ const Navbar = ({ cartCount, toggleCart, toggleFavorites, toggleMyOrders }) => {
         <h1 className="logo" onClick={scrollToTop}>PizzaPalace 🍕</h1>
       </div>
 
-      {/* 2. මැද: ලින්ක් ටික (CSS එකට අනුව Mobile View එක මාරු වෙනවා) */}
       <ul className={isMobile ? "nav-links-mobile" : "nav-links"} onClick={() => setIsMobile(false)}>
         <li><Link to="/" onClick={scrollToTop}>Home</Link></li>
         <li><a href="#about">About</a></li>
@@ -32,7 +29,6 @@ const Navbar = ({ cartCount, toggleCart, toggleFavorites, toggleMyOrders }) => {
         <li><a href="#contact">Contact</a></li>
       </ul>
 
-      {/* 3. දකුණ: අයිකන් ටික */}
       <div className="nav-icons">
         <div className="icon-wrapper" onClick={toggleMyOrders}>
             <FaClipboardList className="nav-icon" />

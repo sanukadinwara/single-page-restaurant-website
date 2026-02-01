@@ -20,7 +20,7 @@ const PromoBanner = () => {
     }
   };
 
-  if (!banner) return null; // Don't show if no data
+  if (!banner) return null; 
 
   return (
     <div className="promo-banner" style={{ backgroundImage: `url(${banner.image_url})` }}>

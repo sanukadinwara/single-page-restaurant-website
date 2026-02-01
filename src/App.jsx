@@ -1,4 +1,3 @@
-// Vercel Build Fix 01
 import React, { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import './App.css';
@@ -19,7 +18,6 @@ import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 
 const MainShop = () => {
-  // --- States ---
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [menuItems, setMenuItems] = useState([]);
   const [cartItems, setCartItems] = useState([]);
@@ -27,10 +25,8 @@ const MainShop = () => {
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showMyOrders, setShowMyOrders] = useState(false);
 
-  // 🔥 SHOP STATUS STATE
   const [shopStatus, setShopStatus] = useState({ isOpen: true, message: '', type: '' });
 
-  // --- 1. Fetch Menu (Database) ---
   useEffect(() => {
       const fetchMenu = async () => {
         let { data, error } = await supabase.from('menu_items').select('*');
@@ -43,13 +39,11 @@ const MainShop = () => {
       fetchMenu();
     }, []);
   
-  // Favorites LocalStorage
   const [favorites, setFavorites] = useState(() => {
     try { return JSON.parse(localStorage.getItem('myFavorites')) || []; } catch { return []; }
   });
   useEffect(() => localStorage.setItem('myFavorites', JSON.stringify(favorites)), [favorites]);
 
-  // --- 2. My Orders & Realtime Setup ---
   const [myOrders, setMyOrders] = useState(() => {
     try { return JSON.parse(localStorage.getItem('myOrders')) || []; } catch { return []; }
   });
@@ -100,16 +94,13 @@ const MainShop = () => {
     };
   }, []); 
 
-  // --- 🔥 SHOP OPEN/CLOSE LOGIC ---
   useEffect(() => {
     checkShopStatus();
     
-    // Listen for Admin Changes to Store Settings
     const statusChannel = supabase.channel('public:store_settings')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'store_settings' }, () => checkShopStatus())
     .subscribe();
 
-    // Re-check every minute (for daily closing time)
     const interval = setInterval(checkShopStatus, 60000);
     return () => { clearInterval(interval); supabase.removeChannel(statusChannel); };
   }, []);
@@ -121,7 +112,6 @@ const MainShop = () => {
     console.log("Database Error:", error);
 
     if (!data) {
-        // If no settings exist, create default entry
         const { data: newData, error: insertError } = await supabase.from('store_settings').insert([{
             open_time: '08:00:00',
             close_time: '22:00:00',
@@ -139,7 +129,6 @@ const MainShop = () => {
     const now = new Date();
     console.log("Current Time (Browser):", now.toString());
 
-    // --- Holiday Mode Check ---
     if (data.is_holiday_active && data.holiday_start && data.holiday_end) {
         const start = new Date(data.holiday_start);
         const end = new Date(data.holiday_end);
@@ -173,7 +162,6 @@ const MainShop = () => {
         }
     }
 
-    // --- Daily Hours Check ---
     const currentTimeStr = now.toTimeString().slice(0, 8); 
     console.log("Daily Check:", { current: currentTimeStr, open: data.open_time, close: data.close_time });
 
@@ -198,7 +186,6 @@ const MainShop = () => {
     setShopStatus({ isOpen: true, type: '', message: '' });
   };
   
-  // --- Logic Functions ---
   const toggleFavorite = (id) => {
     if (favorites.includes(id)) {
       setFavorites(favorites.filter(fav => fav !== id));
@@ -209,7 +196,6 @@ const MainShop = () => {
     }
   };
 
-  // Cart Add Logic
   const [showModal, setShowModal] = useState(false);
   const [selectedPizza, setSelectedPizza] = useState(null);
   const [quantity, setQuantity] = useState(1);
@@ -217,7 +203,6 @@ const MainShop = () => {
   const [currentPrice, setCurrentPrice] = useState(0);
 
   const openModel = (pizza) => {
-    // 🛑 Block if Shop is Closed
     if (!shopStatus.isOpen) {
         toast.error("Shop is Closed! Cannot add items at this time.", {
             duration: 3000,
@@ -262,7 +247,6 @@ const MainShop = () => {
     toast.success("Added to cart! 🍕");
   };
 
-  // Checkout Logic
   const [custName, setCustName] = useState('');
   const [custPhone, setCustPhone] = useState('');
   const [custAddress, setCustAddress] = useState('');
@@ -329,7 +313,6 @@ const MainShop = () => {
 
   return (
     <div>
-      {/* 🔥 SHOP CLOSED BANNER */}
       {!shopStatus.isOpen && shopStatus.message && (
         <div className={`shop-closed-banner ${shopStatus.type === 'holiday' ? 'holiday-mode' : 'daily-closed'}`}
         style={{ minHeight: '40px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -356,7 +339,6 @@ const MainShop = () => {
       </div>
       <div id="reviews"><Reviews /></div>
 
-      {/* --- MODALS --- */}
       {showModal && selectedPizza && (
         <div className="modal-overlay">
           <div className="modal-content">

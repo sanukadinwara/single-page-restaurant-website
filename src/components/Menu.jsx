@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FaHeart, FaRegHeart } from 'react-icons/fa';
 
-// 🔥 Receive 'menuItems' and 'isShopOpen' as props from App.jsx
 function Menu({ menuItems, openModel, favorites, toggleFavorite, isShopOpen }){
 
     const [activeCategory, setActiveCategory] = useState("Pizza");
@@ -14,7 +13,6 @@ function Menu({ menuItems, openModel, favorites, toggleFavorite, isShopOpen }){
         { name: "Combo Ideas", icon: "🍱" }
     ];
 
-    // 🔥 Filter items based on active category
     const filteredItems = menuItems.filter(item => 
         item.category?.toLowerCase() === activeCategory.toLowerCase()
     );
@@ -33,7 +31,7 @@ function Menu({ menuItems, openModel, favorites, toggleFavorite, isShopOpen }){
                             borderRadius: '20px',
                             border: '1px solid #ff9f1c',
                             background: activeCategory === cat.name ? '#ff9f1c' : 'transparent',
-                            color: activeCategory === cat.name ? '#333333' : '#333333', // Text color fix
+                            color: activeCategory === cat.name ? '#333333' : '#333333', 
                             fontWeight: 'bold',
                             cursor: 'pointer',
                             transition: '0.3s'
@@ -46,12 +44,10 @@ function Menu({ menuItems, openModel, favorites, toggleFavorite, isShopOpen }){
 
             <div className="menu-container">
                 
-                {/* 1. If menuItems is empty (Loading state from App.jsx) */}
                 {menuItems.length === 0 && (
                     <p style={{color:'white', textAlign:'center'}}>Loading Menu...</p>
                 )}
 
-                {/* 2. If loaded but no items in this category */}
                 {menuItems.length > 0 && filteredItems.length === 0 && (
                     <p style={{color:'white', textAlign:'center'}}>
                         No items found in {activeCategory}. <br/>
@@ -101,7 +97,7 @@ function Menu({ menuItems, openModel, favorites, toggleFavorite, isShopOpen }){
                                 <button 
                                     className="add-btn" 
                                     onClick={() => openModel(item)} 
-                                    disabled={!isShopOpen} // 🔥 Disable if Shop is Closed
+                                    disabled={!isShopOpen} 
                                     style={{
                                         width: '100%', 
                                         backgroundColor: isShopOpen ? '#ffca28' : '#555',

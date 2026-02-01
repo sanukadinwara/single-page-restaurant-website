@@ -14,24 +14,20 @@ function Footer() {
     { id: 4, icon: <FaInstagram />, text: "@pizzapalace_lk", href: "https://instagram.com" }
   ];
 
-  // 🔥 UPDATED: Save Email to Database
   const handleSubscribe = async (e) => {
     e.preventDefault();
     
-    // 1. Validation
     if (!email) {
         toast.error("Please enter a valid email!");
         return;
     }
 
-    // 2. Insert into Supabase
     const { error } = await supabase
         .from('subscribers')
-        .insert([{ email: email }]); // Database Column name must be 'email'
+        .insert([{ email: email }]);
 
-    // 3. Handle Success/Error
     if (error) {
-        if (error.code === '23505') { // Code for Duplicate Entry
+        if (error.code === '23505') {
             toast.error("You are already subscribed! ✅");
         } else {
             console.error(error);
@@ -39,7 +35,7 @@ function Footer() {
         }
     } else {
         toast.success(`Thank you! ${email} has been subscribed. 📩`);
-        setEmail(""); // Clear input
+        setEmail("");
     }
   };
 

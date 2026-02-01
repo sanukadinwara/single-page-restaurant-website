@@ -1,37 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { FaStar, FaTimes, FaUserCircle } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
-import { supabase } from '../supabaseClient'; // Supabase Link
+import { supabase } from '../supabaseClient';
 import '../App.css';
 
 function Reviews() {
   
-  // 1. Reviews State (Database එකෙන් එන ඩේටා දාගන්න)
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 2. Form Data State
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     rating: 0,
-    text: '' // Note: Database එකේ මේක 'message' විදිහට සේව් වෙන්නේ
+    text: ''
   });
 
   const [showAllReviews, setShowAllReviews] = useState(false);
 
-  // 3. Initial Data Load
   useEffect(() => {
     fetchReviews();
   }, []);
 
-  // 4. Fetch Function
   const fetchReviews = async () => {
     try {
       let { data, error } = await supabase
         .from('reviews')
         .select('*')
-        .order('created_at', { ascending: false }); // අලුත්ම ඒවා උඩට
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setReviews(data || []);
@@ -50,11 +46,9 @@ function Reviews() {
     setFormData({ ...formData, rating: ratingValue });
   };
 
-  // 5. Submit Handler (Database එකට යවන්න)
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validation
     if (!formData.name || !formData.text || formData.rating === 0) {
       toast.error("Please fill Name, Message & give Stars!");
       return;
@@ -68,7 +62,7 @@ function Reviews() {
           name: formData.name,
           email: formData.email,
           rating: formData.rating,
-          message: formData.text // UI එකේ 'text', DB එකේ 'message'
+          message: formData.text
         }
       ]);
 
@@ -77,7 +71,6 @@ function Reviews() {
       toast.dismiss(loadingToast);
       toast.success("Review Added Successfully! Thank you. ⭐");
       
-      // Clear Form & Refresh List
       setFormData({ name: '', email: '', rating: 0, text: '' });
       fetchReviews(); 
 
@@ -165,7 +158,6 @@ function Reviews() {
         </button>
       </div>
 
-      {/* --- REVIEWS POPUP --- */}
       {showAllReviews && (
         <div className="modal-overlay">
             <div className="modal-content" style={{maxHeight: '85vh', overflowY: 'auto', maxWidth: '900px', width: '95%'}}>
@@ -198,7 +190,6 @@ function Reviews() {
                                 ))}
                             </div>
                         </div>
-                        {/* Note: DB uses 'message', Form uses 'text'. Here we display DB data */}
                         <p className="review-text">"{review.message}"</p>
                     </div>
                     ))}

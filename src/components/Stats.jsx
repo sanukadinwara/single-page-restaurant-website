@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../App.css';
-import { supabase } from '../supabaseClient'; // Supabase Import
+import { supabase } from '../supabaseClient';
 
 function Stats() {
   const [stats, setStats] = useState([
@@ -10,11 +10,9 @@ function Stats() {
     { id: 4, label: "Years of Service", value: 0, current: 0, icon: "🏆" }
   ]);
 
-  // 1. Fetch Data from Database
   useEffect(() => {
     fetchRealStats();
 
-    // Listen to Realtime updates (Optional: අලුත් ඕඩර් එකක් ආපු ගමන් අප්ඩේට් වෙන්න)
     const channel = supabase.channel('realtime-stats')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchRealStats())
       .subscribe();
@@ -24,17 +22,13 @@ function Stats() {
 
   const fetchRealStats = async () => {
     try {
-      // Fetch all orders
       const { data: orders, error } = await supabase.from('orders').select('*');
 
       if (error || !orders) return;
 
-      // --- CALCULATIONS ---
 
-      // 1. Happy Customers (Unique Phone Numbers)
       const uniqueCustomers = new Set(orders.map(o => o.customer_phone)).size;
 
-      // 2. Pizzas Delivered (Sum of quantity in items JSON)
       let totalPizzas = 0;
       orders.forEach(order => {
         if (Array.isArray(order.items)) {
@@ -42,14 +36,10 @@ function Stats() {
         }
       });
 
-      // 3. 5 Star Ratings (Logic: Assume 90% of completed orders give 5 stars)
-      // Since we don't have a reviews table yet, we estimate based on volume
       const estimatedRatings = Math.floor(orders.length * 0.9);
 
-      // 4. Years of Service (Time since first order)
-      let yearsCount = 1; // Default starting year
+      let yearsCount = 1;
       if (orders.length > 0) {
-          // Sort to find the oldest order
           const sortedOrders = orders.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
           const firstDate = new Date(sortedOrders[0].created_at);
           const now = new Date();
@@ -58,7 +48,6 @@ function Stats() {
           yearsCount = Math.floor(diffYears) < 1 ? 1 : Math.floor(diffYears);
       }
 
-      // Update State with Real Values (Animation will handle the transition)
       setStats(prevStats => prevStats.map(stat => {
         if (stat.id === 1) return { ...stat, value: uniqueCustomers };
         if (stat.id === 2) return { ...stat, value: totalPizzas };
@@ -72,23 +61,21 @@ function Stats() {
     }
   };
 
-  // 2. Animation Logic (Existing Logic Preserved)
   useEffect(() => {
     const interval = setInterval(() => {
       setStats((prevStats) => 
         prevStats.map((stat) => {
           if (stat.current < stat.value) {
-            // Calculate increment based on gap (make it faster for larger numbers)
             const increment = Math.ceil((stat.value - stat.current) / 20) || 1; 
             return { ...stat, current: Math.min(stat.current + increment, stat.value) };
           }
           return stat;
         })
       );
-    }, 40); // Speed of animation
+    }, 40);
 
     return () => clearInterval(interval);
-  }, [stats]); // Re-run animation when 'stats' (targets) change
+  }, [stats]);
 
   return (
     <section className="stats-section">
@@ -98,7 +85,7 @@ function Stats() {
             <div className="stat-icon">{stat.icon}</div>
             <div className="stat-number">
                 {stat.current}
-                {stat.id !== 4 ? '+' : ''} {/* Don't show '+' for Years */}
+                {stat.id !== 4 ? '+' : ''}
             </div>
             <div className="stat-label">{stat.label}</div>
           </div>

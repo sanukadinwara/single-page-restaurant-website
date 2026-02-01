@@ -4,15 +4,14 @@ import '../App.css';
 
 const MyOrders = ({ orders, closeMyOrders }) => {
   
-  // 1. Helper function to get Status Color & Icon
   const getStatusInfo = (status) => {
       switch (status) {
-          case 'Pending': return { color: '#f39c12', icon: <FaClock />, label: 'Pending' }; // Orange
-          case 'Cooking': return { color: '#d35400', icon: <FaUtensils />, label: 'Cooking' }; // Dark Orange
-          case 'Ready': return { color: '#2980b9', icon: <FaCheckCircle />, label: 'Ready' }; // Blue
-          case 'Delivered': return { color: '#27ae60', icon: <FaMotorcycle />, label: 'Delivered' }; // Green
-          case 'Completed': return { color: '#2c3e50', icon: <FaCheckCircle />, label: 'Completed' }; // Dark Blue
-          default: return { color: '#7f8c8d', icon: <FaClock />, label: status || 'Pending' }; // Gray
+          case 'Pending': return { color: '#f39c12', icon: <FaClock />, label: 'Pending' };
+          case 'Cooking': return { color: '#d35400', icon: <FaUtensils />, label: 'Cooking' };
+          case 'Ready': return { color: '#2980b9', icon: <FaCheckCircle />, label: 'Ready' };
+          case 'Delivered': return { color: '#27ae60', icon: <FaMotorcycle />, label: 'Delivered' };
+          case 'Completed': return { color: '#2c3e50', icon: <FaCheckCircle />, label: 'Completed' };
+          default: return { color: '#7f8c8d', icon: <FaClock />, label: status || 'Pending' };
       }
   };
 
@@ -35,12 +34,11 @@ const MyOrders = ({ orders, closeMyOrders }) => {
             </div>
           ) : (
             sortedOrders.map((order) => {
-              const statusInfo = getStatusInfo(order.status); // Get dynamic style
+              const statusInfo = getStatusInfo(order.status);
 
               return (
                 <div key={order.id} className="order-card" style={{border:'1px solid #eee', borderRadius:'10px', padding:'15px', marginBottom:'15px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)'}}>
                   
-                  {/* 1. Header: ID & Dynamic Status */}
                   <div className="order-card-header" style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px'}}>
                     <span style={{fontWeight:'bold', fontSize:'1.1rem'}}>#{order.id}</span>
                     <span style={{
@@ -58,12 +56,10 @@ const MyOrders = ({ orders, closeMyOrders }) => {
                     </span>
                   </div>
 
-                  {/* 2. Date */}
                   <div style={{fontSize:'0.85rem', color:'#777', marginBottom:'10px'}}>
                     <FaClock style={{marginRight:'5px'}}/> {order.date}
                   </div>
 
-                  {/* 3. Items List */}
                   <div style={{background:'#f9f9f9', padding:'10px', borderRadius:'8px', fontSize:'0.95rem'}}>
                     {order.items.map((item, index) => (
                       <div key={index} style={{display:'flex', justifyContent:'space-between', marginBottom:'5px'}}>
@@ -73,7 +69,6 @@ const MyOrders = ({ orders, closeMyOrders }) => {
                     ))}
                   </div>
 
-                  {/* 4. Total */}
                   <div style={{display:'flex', justifyContent:'space-between', marginTop:'15px', borderTop:'1px dashed #ddd', paddingTop:'10px', fontWeight:'bold', fontSize:'1.1rem'}}>
                     <span>Total Amount</span>
                     <span style={{color:'#d35400'}}>Rs. {Number(order.total).toFixed(2)}</span>

@@ -5,19 +5,16 @@ import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import emailjs from '@emailjs/browser';
 
-// Icons Imports
 import { IoBarChartSharp, IoStatsChart, IoLogOut, IoFlashSharp, IoTime } from "react-icons/io5"; 
 import { FaBoxOpen, FaPizzaSlice, FaScroll, FaPlusSquare, FaClipboardList, FaCloudUploadAlt, FaCalendarAlt, FaImages, FaBars, FaTimes, FaFileDownload, FaEdit, FaTrashAlt, FaPlusCircle, FaComments, FaStar } from "react-icons/fa";
 import { MdOutlineMenuBook, MdWavingHand, MdStorefront } from "react-icons/md";
 import { FaPencil, FaTrash } from "react-icons/fa6";
 
-// Chart JS Imports
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement
 } from 'chart.js';
 import { Bar, Pie } from 'react-chartjs-2';
 
-// PDF Imports
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
@@ -28,7 +25,6 @@ function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // --- States for Menu Form ---
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
   const [itemName, setItemName] = useState('');
@@ -38,27 +34,29 @@ function AdminDashboard() {
   const [variants, setVariants] = useState([{ name: '', price: '' }]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+  const [showPromoModal, setShowPromoModal] = useState(false);
 
-  // --- States for Orders ---
+  const [discountType, setDiscountType] = useState('percentage'); 
+  const [discountValue, setDiscountValue] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [isPromoLoading, setIsPromoLoading] = useState(false);
+
   const [orderSearch, setOrderSearch] = useState('');
   
-  // --- States for Charts ---
   const [salesView, setSalesView] = useState('Weekly');
   const [productView, setProductView] = useState('Weekly');
 
-  // --- States for Promo Banner ---
   const [promoId, setPromoId] = useState(null); 
   const [promoImage, setPromoImage] = useState('');
   const [promoHeading, setPromoHeading] = useState('');
   const [promoSub, setPromoSub] = useState('');
   const [promoCode, setPromoCode] = useState('');
   
-  // New States for Multiple Banners
   const [bannerList, setBannerList] = useState([]); 
   const [showBannerSelector, setShowBannerSelector] = useState(false); 
   const [bannerActionType, setBannerActionType] = useState(''); 
 
-  // --- States for Store Hours & Holiday ---
   const [storeSettingsId, setStoreSettingsId] = useState(null);
   const [openTime, setOpenTime] = useState('08:00');
   const [closeTime, setCloseTime] = useState('22:00');
@@ -66,15 +64,13 @@ function AdminDashboard() {
   const [holidayEnd, setHolidayEnd] = useState('');
   const [isHolidayActive, setIsHolidayActive] = useState(false);
 
-  // --- REAL DATA STATES ---
   const [menuList, setMenuList] = useState([]); 
   const [orders, setOrders] = useState([]); 
   const [reviewsList, setReviewsList] = useState([]);
 
-  // 🔥 CLOUDINARY UPLOAD FUNCTION
   const uploadToCloudinary = async (file) => {
-    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME; // 👇 env එකෙන් ගැනීම
-    const uploadPreset = import.meta.env.VITE_CLOUDINARY_PRESET;   // 👇 env එකෙන් ගැනීම
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = import.meta.env.VITE_CLOUDINARY_PRESET;  
 
     const formData = new FormData();
     formData.append("file", file);
@@ -82,13 +78,13 @@ function AdminDashboard() {
     formData.append("cloud_name", cloudName);
 
     try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { // URL එකත් වෙනස් වුනා
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
         method: "POST",
         body: formData,
       });
 
       const data = await res.json();
-      return data.secure_url; // මේක තමයි ඉමේජ් ලින්ක් එක
+      return data.secure_url;
     } catch (error) {
       console.error("Upload Error:", error);
       toast.error("Image Upload Failed!");
@@ -96,7 +92,6 @@ function AdminDashboard() {
     }
   };
 
-  // 🔥 MAIN HANDLER FOR FILE INPUTS
   const handleImageFileChange = async (e, type) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -109,29 +104,31 @@ function AdminDashboard() {
 
     if (url) {
         if (type === 'MENU') {
-            setImage(url); // Menu Image එකට සෙට් වෙනවා
+            setImage(url);
         } else if (type === 'PROMO') {
-            setPromoImage(url); // Promo Banner එකට සෙට් වෙනවා
+            setPromoImage(url);
         }
         toast.success("Image Uploaded! ✅");
     }
   };
 
-  // --- 1. Load Data on Startup ---
   useEffect(() => {
-    const isAdmin = sessionStorage.getItem('pizzaAdminLogin');
-    if (!isAdmin) {
-      navigate('/admin');
-    } else {
-      fetchMenu(); 
-      fetchOrders();
-      fetchAllBanners();
-      fetchStoreSettings();
-      fetchAllReviews();
-    }
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        navigate('/admin'); 
+      } else {
+        fetchMenu(); 
+        fetchOrders();
+        fetchAllBanners();
+        fetchStoreSettings();
+        fetchAllReviews();
+      }
+    };
+    checkUser();
   }, []);
 
-  // --- 2. Real-Time Listener ---
   useEffect(() => {
     const channel = supabase
       .channel('admin-dashboard-changes')
@@ -149,7 +146,36 @@ function AdminDashboard() {
     };
   }, []);
 
-  // --- Fetch Functions ---
+  useEffect(() => {
+    let timeout;
+
+    const doLogout = () => {
+      sessionStorage.removeItem('pizzaAdminLogin');
+      
+      window.location.replace('/admin/');
+    };
+
+    const resetTimer = () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(doLogout, 3600000); 
+    };
+
+    window.addEventListener('mousemove', resetTimer);
+    window.addEventListener('keypress', resetTimer);
+    window.addEventListener('click', resetTimer);
+    window.addEventListener('scroll', resetTimer);
+
+    resetTimer();
+
+    return () => {
+      clearTimeout(timeout);
+      window.removeEventListener('mousemove', resetTimer);
+      window.removeEventListener('keypress', resetTimer);
+      window.removeEventListener('click', resetTimer);
+      window.removeEventListener('scroll', resetTimer);
+    };
+  }, []);
+
   const fetchMenu = async () => {
     let { data, error } = await supabase.from('menu_items').select('*').order('id', { ascending: false });
     if (!error) setMenuList(data);
@@ -190,7 +216,6 @@ function AdminDashboard() {
 
     if (!data || data.length === 0) {
         console.log("⚠️ No settings found, creating default...");
-        // Create default settings
         const { data: newData, error: insertError } = await supabase
             .from('store_settings')
             .insert([{
@@ -224,7 +249,6 @@ function AdminDashboard() {
 
       const fullMessage = `${mainMessage}\n\nFor more information, visit https://pizzapalacelk.vercel.app/.`;
 
-      // EmailJS Loop (Free package එකේ ලිමිට් තියෙන්න පුලුවන්)
       subs.forEach(sub => {
           const templateParams = {
               to_email: sub.email,
@@ -232,12 +256,11 @@ function AdminDashboard() {
               message: fullMessage
           };
           
-          // මෙතන ඔයාගේ EmailJS Keys දාන්න
           emailjs.send(
-              import.meta.env.VITE_EMAILJS_SERVICE_ID, // 👇 env එකෙන්
-              import.meta.env.VITE_EMAILJS_TEMPLATE_ID, // 👇 env එකෙන්
+              import.meta.env.VITE_EMAILJS_SERVICE_ID,
+              import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
               templateParams, 
-              import.meta.env.VITE_EMAILJS_PUBLIC_KEY   // 👇 env එකෙන්
+              import.meta.env.VITE_EMAILJS_PUBLIC_KEY  
           )
               .then(() => console.log(`Email sent to ${sub.email}`))
               .catch((err) => console.error("Email failed", err));
@@ -288,7 +311,6 @@ function AdminDashboard() {
       setPromoImage('');
   };
 
-  // --- HELPER FUNCTIONS ---
   const formatDateTime = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -308,7 +330,6 @@ function AdminDashboard() {
     }, 1500);
   };
 
-  // 🔥 BANNER ACTION HANDLERS
   const handleUpdateClick = () => {
       if (bannerList.length === 0) {
           toast.error("No banners to update!");
@@ -350,7 +371,6 @@ function AdminDashboard() {
       }
   };
 
-  // 🔥 DATABASE OPERATIONS
   const saveBannerToDB = async () => {
     const bannerData = {
         heading: promoHeading,
@@ -377,7 +397,6 @@ function AdminDashboard() {
         }        
   };
 
-  // 🔥 STORE SETTINGS SAVE - FIXED VERSION
   const saveDailyHours = async () => {
     if (!openTime || !closeTime) {
         toast.error("Please set both opening and closing times!");
@@ -395,7 +414,6 @@ function AdminDashboard() {
 
     try {
         if (storeSettingsId) {
-            // Update existing
             console.log("Updating existing settings with ID:", storeSettingsId);
             const { data, error } = await supabase
                 .from('store_settings')
@@ -414,7 +432,6 @@ function AdminDashboard() {
             toast.success("Daily Hours Updated Successfully! ✅");
             fetchStoreSettings();
         } else {
-            // Insert new
             console.log("Creating new settings...");
             const { data, error } = await supabase
                 .from('store_settings')
@@ -488,7 +505,6 @@ function AdminDashboard() {
             toast.success("Holiday Mode Activated! 🏖️", { duration: 3000 });
             fetchStoreSettings();
         } else {
-            // If no settings exist, create with holiday mode
             const { data, error } = await supabase
                 .from('store_settings')
                 .insert([{
@@ -566,11 +582,9 @@ function AdminDashboard() {
     }
   };
 
-  // --- SHARED DELETE FUNCTION ---
   const confirmDelete = async () => {
       let error = null;
       
-      // 1. Banner Delete Logic
       if (deleteType === 'BANNER') {
           ({ error } = await supabase.from('promo_settings').delete().eq('id', deleteId));
           if (!error) { 
@@ -578,14 +592,12 @@ function AdminDashboard() {
               clearBannerForm(); 
           }
       } 
-      // 2. Menu Item Delete Logic
       else if (deleteType === 'MENU') {
           ({ error } = await supabase.from('menu_items').delete().eq('id', deleteId));
           if (!error) {
               fetchMenu();
           }
       } 
-      // 3. Review Delete Logic (New)
       else if (deleteType === 'REVIEW') {
           ({ error } = await supabase.from('reviews').delete().eq('id', deleteId));
           if (!error) {
@@ -593,30 +605,24 @@ function AdminDashboard() {
           }
       }
 
-      // Success/Error Message
       if (!error) {
           toast.success("Deleted Successfully!");
       } else {
           toast.error("Delete Failed!");
       }
       
-      // Reset Modal State
       setShowDeleteModal(false);
       setDeleteId(null);
       setDeleteType('');
       setBannerActionType('');
   };
 
-  // Menu Delete Trigger
   const handleDeleteClick = (id) => { 
       setDeleteId(id); 
       setBannerActionType('');
       setShowDeleteModal(true); 
   };
 
-  // ==========================================
-  // 🔥 CHART DATA LOGIC 🔥
-  // ==========================================
 
   const getFilteredOrders = (viewType) => {
     const now = new Date();
@@ -809,9 +815,6 @@ function AdminDashboard() {
     toast.success("Report Downloaded!");
   };
 
-  // ==========================================
-  // CRUD & Order Logic
-  // ==========================================
   const resetForm = () => { setItemName(''); setCategory('Pizza'); setDesc(''); setImage(''); setVariants([{ name: '', price: '' }]); setIsEditing(false); setCurrentId(null); };
   const handleVariantChange = (index, field, value) => { const newVariants = [...variants]; newVariants[index][field] = value; setVariants(newVariants); };
   const addVariant = () => setVariants([...variants, { name: '', price: '' }]);
@@ -864,7 +867,6 @@ function AdminDashboard() {
       return (name.toLowerCase().includes(search) || phone.includes(search) || order.id.toString().includes(search));
   });
 
-  // --- RENDER FUNCTIONS ---
 
   const renderDashboard = () => {
     const totalOrdersCount = orders.length;
@@ -874,181 +876,224 @@ function AdminDashboard() {
 
     return (
         <div className="admin-content fade-in">
-        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-            <h2><MdWavingHand /> Welcome Back, Admin!</h2>
-        </div>
-        
-        <div className="stats-grid">
-            <div className="admin-card"><h3>Total Orders</h3><p>{totalOrdersCount}</p></div>
-            <div className="admin-card"><h3>Total Earnings</h3><p>Rs. {totalEarnings.toLocaleString()}</p></div>
-            <div className="admin-card"><h3>Pending Orders</h3><p className="highlight">{pendingCount}</p></div>
-            <div className="admin-card"><h3>Total Customers</h3><p>{uniqueCustomersCount}</p></div>
-        </div>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                <h2><MdWavingHand /> Welcome Back, Admin!</h2>
+            </div>
+            
+            <div className="stats-grid">
+                <div className="admin-card"><h3>Total Orders</h3><p>{totalOrdersCount}</p></div>
+                <div className="admin-card"><h3>Total Earnings</h3><p>Rs. {totalEarnings.toLocaleString()}</p></div>
+                <div className="admin-card"><h3>Pending Orders</h3><p className="highlight">{pendingCount}</p></div>
+                <div className="admin-card"><h3>Total Customers</h3><p>{uniqueCustomersCount}</p></div>
+            </div>
 
-        <div className="charts-container">
-            {/* 🔥 BAR CHART */}
-            <div className="chart-card bar-chart" style={{height: '430px'}}>
-                <div className="chart-header">
-                    <div className="chart-title-group"><IoStatsChart className="chart-icon" /><h3>Sales Analytics</h3></div>
-                    <select className="chart-filter" value={salesView} onChange={(e) => setSalesView(e.target.value)}>
-                        <option value="Weekly">Last 7 Days</option>
-                        <option value="Monthly">Last 30 Days</option>
-                        <option value="Annually">This Year</option>
-                    </select>
+            <div className="charts-container">
+                <div className="chart-card bar-chart" style={{height: '430px'}}>
+                    <div className="chart-header">
+                        <div className="chart-title-group"><IoStatsChart className="chart-icon" /><h3>Sales Analytics</h3></div>
+                        <select className="chart-filter" value={salesView} onChange={(e) => setSalesView(e.target.value)}>
+                            <option value="Weekly">Last 7 Days</option>
+                            <option value="Monthly">Last 30 Days</option>
+                            <option value="Annually">This Year</option>
+                        </select>
+                    </div>
+                    <div style={{height: '280px', width: '100%'}}>
+                        <Bar data={getSalesChartData()} options={getSalesChartOptions()} />
+                    </div>
                 </div>
-                <div style={{height: '280px', width: '100%'}}>
-                    <Bar data={getSalesChartData()} options={getSalesChartOptions()} />
+
+                <div className="chart-card pie-chart" style={{height: '430px'}}>
+                    <div className="chart-header">
+                        <div className="chart-title-group"><FaPizzaSlice className="chart-icon" /><h3>Top Selling Items</h3></div>
+                        <select className="chart-filter" value={productView} onChange={(e) => setProductView(e.target.value)}>
+                            <option value="Weekly">This Week</option>
+                            <option value="Monthly">This Month</option>
+                            <option value="Annually">This Year</option>
+                        </select>
+                    </div>
+                    <div className="pie-wrapper" style={{height: '250px', display:'flex', justifyContent:'center'}}>
+                        <Pie data={getProductChartData()} options={{ maintainAspectRatio: false }} />
+                    </div>
                 </div>
             </div>
 
-            {/* 🔥 PIE CHART */}
-            <div className="chart-card pie-chart" style={{height: '430px'}}>
-                <div className="chart-header">
-                    <div className="chart-title-group"><FaPizzaSlice className="chart-icon" /><h3>Top Selling Items</h3></div>
-                    <select className="chart-filter" value={productView} onChange={(e) => setProductView(e.target.value)}>
-                        <option value="Weekly">This Week</option>
-                        <option value="Monthly">This Month</option>
-                        <option value="Annually">This Year</option>
-                    </select>
-                </div>
-                <div className="pie-wrapper" style={{height: '250px', display:'flex', justifyContent:'center'}}>
-                    <Pie data={getProductChartData()} options={{ maintainAspectRatio: false }} />
-                </div>
-            </div>
-        </div>
-
-        {/* PDF BUTTON */}
-        <div style={{display: 'flex', justifyContent: 'flex-end', marginTop: '40px', marginBottom: '40px'}}>
-            <button className="admin-btn-save" onClick={generatePDF} style={{backgroundColor:'#333', display:'flex', alignItems:'center', gap:'8px', padding: '12px 24px', fontSize: '1rem'}}>
-                <FaFileDownload /> Download Report
-            </button>
-        </div>
-
-        {/* 🔥 PROMO BANNER & SETTINGS */}
-        <div className="settings-grid">
-            <div className="settings-card promo-section">
-                <div className="section-header"><FaImages className="section-icon" /><h3>Promo Banner Manager</h3></div>
-                
-                <div className="upload-box" style={{flexDirection: 'column', gap:'10px'}}>
-                {/* 👇 File Input එක වෙනස් කරන්න */}
-                <input 
-                    type="file" 
-                    id="promo-upload" 
-                    hidden 
-                    onChange={(e) => handleImageFileChange(e, 'PROMO')} 
-                />
-                
-                <label htmlFor="promo-upload" className="upload-label" style={{width:'100%', overflow:'hidden', cursor:'pointer'}}>
-                    {promoImage ? (
-                        <img src={promoImage} alt="Promo" className="promo-preview-img" />
-                    ) : (
-                        <div className="placeholder-content">
-                            <FaCloudUploadAlt className="upload-icon-large" />
-                            <span>Click to Upload Image</span>
-                        </div>
-                    )}
-                </label>
-                
-                <div style={{width:'100%'}}>
-                    <label style={{fontSize:'0.85rem', color:'#666'}}>Image Link (Auto-filled):</label>
-                    <input 
-                        className="admin-input" 
-                        placeholder="https://example.com/banner.jpg" 
-                        value={promoImage} 
-                        onChange={(e)=>setPromoImage(e.target.value)} 
-                    />
-                </div>
-                </div>
-
-                <div className="promo-inputs">
-                    <div className="form-group">
-                        <input className="admin-input" placeholder="Heading (e.g. HOT & SPICY)" value={promoHeading} onChange={(e)=>setPromoHeading(e.target.value)} />
-                    </div>
-                    <div className="form-group">
-                        <input className="admin-input" placeholder="Sub Heading (e.g. Pizza of the Month)" value={promoSub} onChange={(e)=>setPromoSub(e.target.value)} />
-                    </div>
-                    <div className="form-group">
-                        <input className="admin-input" placeholder="Promo Code (e.g. GET20OFF)" value={promoCode} onChange={(e)=>setPromoCode(e.target.value)} />
-                    </div>
-                </div>
-                
-                {/* Action Buttons for Banner */}
-                <div className="form-actions" style={{marginTop:'10px', display:'flex', gap:'10px', flexWrap:'wrap'}}>
-                    <button className="admin-btn-save" onClick={saveBannerToDB} style={{flex:1}}>
-                        {promoId ? "Save Changes" : "Save as New Banner"}
-                    </button>
-                    {promoId && (
-                        <button className="admin-btn-save" onClick={() => { clearBannerForm(); toast("Form Cleared. Enter details to add new."); }} style={{background: '#28a745', flex:1}}>
-                            <FaPlusCircle /> Add New
-                        </button>
-                    )}
-                </div>
-                
-                <div style={{marginTop:'20px', display:'flex', gap:'10px'}}>
-                    <button 
-                        className="admin-promo-btn btn-edit-blue"
-                        onClick={handleUpdateClick} 
-                    >
-                        <FaEdit size={18} /> 
-                        <span>Select to Edit</span>
-                    </button>
-
-                    <button 
-                        className="admin-promo-btn btn-delete-red"
-                        onClick={handleBannerDeleteClick} 
-                    >
-                        <FaTrashAlt size={18} /> 
-                        <span>Select to Delete</span>
-                    </button>
-                </div>
-
-            </div>
-
-            <div className="settings-card store-section">
-                <div className="section-header"><MdStorefront className="section-icon" /><h3>Store Operating Hours</h3></div>
-                <div className="time-inputs" style={{display:'flex', gap:'10px', marginBottom:'15px'}}>
-                    <div style={{flex:1}}>
-                        <label style={{fontSize:'0.85rem', color:'#666', marginBottom:'5px', display:'block'}}>Opening Time</label>
-                        <input type="time" className="admin-input" value={openTime} onChange={(e) => setOpenTime(e.target.value)} />
-                    </div>
-                    <div style={{flex:1}}>
-                        <label style={{fontSize:'0.85rem', color:'#666', marginBottom:'5px', display:'block'}}>Closing Time</label>
-                        <input type="time" className="admin-input" value={closeTime} onChange={(e) => setCloseTime(e.target.value)} />
-                    </div>
-                </div>
-                <button className="save-status-btn" onClick={saveDailyHours} style={{width:'100%', padding:'10px', background:'#28a745', color:'#fff', border:'none', borderRadius:'5px', cursor:'pointer', fontWeight:'bold'}}>
-                    Save Daily Hours
+            <div style={{display: 'flex', justifyContent: 'flex-end', marginTop: '40px', marginBottom: '40px'}}>
+                <button className="admin-btn-save" onClick={generatePDF} style={{backgroundColor:'#333', display:'flex', alignItems:'center', gap:'8px', padding: '12px 24px', fontSize: '1rem'}}>
+                    <FaFileDownload /> Download Report
                 </button>
+            </div>
+
+            <div className="settings-grid" style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+                gap: '20px',
+                maxWidth: '100%',
+                overflow: 'hidden' 
+            }}>
                 
-                <hr className="divider" style={{margin:'25px 0', border:'none', borderTop:'1px solid #ddd'}} />
-                
-                <h4 style={{display:'flex', alignItems:'center', gap:'8px', marginBottom:'15px'}}><FaCalendarAlt /> Holiday / Temporary Closure</h4>
-                
-                {isHolidayActive && (
-                    <div style={{background:'#fff3cd', border:'1px solid #ffc107', padding:'10px', borderRadius:'5px', marginBottom:'15px', fontSize:'0.9rem'}}>
-                        ⚠️ <strong className='text-black'>Holiday Mode Active</strong>
+                <div className="settings-card promo-section" style={{ gridColumn: '1 / -1' }}>
+                    <div className="section-header"><FaImages className="section-icon" /><h3>Promo Manager</h3></div>
+                    
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
+                        
+                        <div className="upload-box" style={{flexDirection: 'column', gap:'10px', width: '100%'}}>
+                            <input type="file" id="promo-upload" hidden onChange={(e) => handleImageFileChange(e, 'PROMO')} />
+                            <label htmlFor="promo-upload" className="upload-label" style={{width:'100%', height:'200px', overflow:'hidden', cursor:'pointer', boxSizing:'border-box'}}>
+                                {promoImage ? (
+                                    <img src={promoImage} alt="Promo" className="promo-preview-img" style={{width:'100%', height:'100%', objectFit:'cover'}} />
+                                ) : (
+                                    <div className="placeholder-content">
+                                        <FaCloudUploadAlt className="upload-icon-large" />
+                                        <span>Click to Upload Banner</span>
+                                    </div>
+                                )}
+                            </label>
+                            <input className="admin-input" placeholder="Image Link" value={promoImage} onChange={(e)=>setPromoImage(e.target.value)} style={{fontSize:'12px', width: '100%', boxSizing: 'border-box'}} />
+                        </div>
+
+                        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(250px, 1fr))', gap:'15px'}}>
+                            <div className="form-group">
+                                <label>Banner Heading</label>
+                                <input className="admin-input" placeholder="Ex: HOT & SPICY" value={promoHeading} onChange={(e)=>setPromoHeading(e.target.value)} style={{width:'100%', boxSizing:'border-box'}} />
+                            </div>
+                            <div className="form-group">
+                                <label>Sub Heading</label>
+                                <input className="admin-input" placeholder="Ex: Pizza of the Month" value={promoSub} onChange={(e)=>setPromoSub(e.target.value)} style={{width:'100%', boxSizing:'border-box'}} />
+                            </div>
+                        </div>
+
+                        <button 
+                            className="admin-btn" 
+                            style={{
+                                background:'#34495e', display:'flex', alignItems:'center', justifyContent:'center', 
+                                gap:'10px', padding:'15px', fontSize:'1rem', marginTop:'10px'
+                            }}
+                            onClick={() => setShowPromoModal(true)}
+                        >
+                            <FaPlusSquare /> 
+                            {promoCode ? `Promo Active: ${promoCode} (Edit)` : "Configure Promo Rules"} 
+                        </button>
+
+                        <div className="form-actions" style={{marginTop:'10px', display:'flex', gap:'10px', flexWrap:'wrap'}}>
+                            <button className="admin-btn-save" onClick={saveBannerToDB} style={{flex:1, minWidth:'150px'}}>
+                                {promoId ? "Update Banner" : "Save Banner"}
+                            </button>
+                            {promoId && (
+                                <button className="admin-btn-save" onClick={() => { clearBannerForm(); toast("Cleared"); }} style={{background: '#28a745', width:'100px'}}>
+                                    New
+                                </button>
+                            )}
+                        </div>
+
+                        <div style={{display:'flex', gap:'10px', marginTop:'10px', flexWrap:'wrap'}}>
+                            <button className="admin-promo-btn btn-edit-blue" onClick={handleUpdateClick} style={{flex:1}}><FaEdit /> Edit</button>
+                            <button className="admin-promo-btn btn-delete-red" onClick={handleBannerDeleteClick} style={{flex:1}}><FaTrashAlt /> Delete</button>
+                        </div>
+                    </div>
+                </div>
+
+                {showPromoModal && (
+                    <div className="modal-overlay" style={{
+                        position:'fixed', top:0, left:0, width:'100%', height:'100%', 
+                        background:'rgba(0,0,0,0.6)', backdropFilter:'blur(5px)', 
+                        display:'flex', justifyContent:'center', alignItems:'center', zIndex:2000
+                    }}>
+                        <div className="modal-content fade-in" style={{
+                            background:'white', padding:'25px', borderRadius:'10px', 
+                            width:'90%', maxWidth:'450px', position:'relative', boxShadow:'0 10px 30px rgba(0,0,0,0.3)'
+                        }}>
+                            <button onClick={() => setShowPromoModal(false)} style={{position:'absolute', top:'10px', right:'15px', background:'none', border:'none', fontSize:'20px', cursor:'pointer', color:'#555'}}>✖</button>
+                            
+                            <h3 style={{marginBottom:'20px', display:'flex', alignItems:'center', gap:'10px', color:'#333'}}>
+                                <FaPlusSquare /> Promo Rules
+                            </h3>
+
+                            <div className="form-group" style={{marginBottom:'15px'}}>
+                                <label style={{fontWeight:'bold', color:'#d35400', display:'block', marginBottom:'5px'}}>Promo Code</label>
+                                <input className="admin-input" placeholder="Ex: SAVE20" value={promoCode} onChange={(e)=>setPromoCode(e.target.value)} style={{width:'100%', boxSizing:'border-box', border:'2px solid #ff9f1c'}} />
+                            </div>
+
+                            <div style={{display:'flex', gap:'15px', marginBottom:'15px'}}>
+                                <div style={{flex:1}}>
+                                    <label style={{fontSize:'0.85rem', marginBottom:'5px', display:'block', color:'#333'}}>Type</label>
+                                    <select className="admin-input" value={discountType} onChange={(e) => setDiscountType(e.target.value)} style={{width:'100%', boxSizing:'border-box'}}>
+                                        <option value="percentage">%</option>
+                                        <option value="fixed">Rs.</option>
+                                    </select>
+                                </div>
+                                <div style={{flex:1}}>
+                                    <label style={{fontSize:'0.85rem', marginBottom:'5px', display:'block', color:'#333'}}>Value</label>
+                                    <input type="number" className="admin-input" placeholder="10" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} style={{width:'100%', boxSizing:'border-box'}} />
+                                </div>
+                            </div>
+
+                            <div style={{display:'flex', gap:'15px', marginBottom:'20px'}}>
+                                <div style={{flex:1}}>
+                                    <label style={{fontSize:'0.85rem', marginBottom:'5px', display:'block', color:'#333'}}>Start Date</label>
+                                    <input type="date" className="admin-input" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{width:'100%', boxSizing:'border-box'}} />
+                                </div>
+                                <div style={{flex:1}}>
+                                    <label style={{fontSize:'0.85rem', marginBottom:'5px', display:'block', color:'#333'}}>End Date</label>
+                                    <input type="date" className="admin-input" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{width:'100%', boxSizing:'border-box'}} />
+                                </div>
+                            </div>
+
+                            <button 
+                                className="admin-btn" 
+                                style={{width:'100%', background:'#e67e22', padding:'12px'}}
+                                onClick={handleSavePromo} 
+                                disabled={isPromoLoading}
+                            >
+                                {isPromoLoading ? 'Saving...' : 'Set Rules & Save'}
+                            </button>
+                        </div>
                     </div>
                 )}
-                
-                <div style={{marginBottom:'10px'}}>
-                    <label style={{fontSize:'0.85rem', color:'#666', marginBottom:'5px', display:'block'}}>Start Date & Time</label>
-                    <input type="datetime-local" className="admin-input" value={holidayStart} onChange={(e) => setHolidayStart(e.target.value)} />
-                </div>
-                <div style={{marginBottom:'15px'}}>
-                    <label style={{fontSize:'0.85rem', color:'#666', marginBottom:'5px', display:'block'}}>End Date & Time</label>
-                    <input type="datetime-local" className="admin-input" value={holidayEnd} onChange={(e) => setHolidayEnd(e.target.value)} />
-                </div>
-                
-                {isHolidayActive ? 
-                    <button className="btn-holiday-off" onClick={clearHolidayMode}>
-                        End Holiday Mode (Reopen Shop)
-                    </button> :
-                    <button className="admin-btn-save" style={{background: '#d32f2f', width:'100%', padding:'10px', marginTop:'10px'}} onClick={setHolidayMode}>
-                        Activate Holiday Mode
+
+                <div className="settings-card store-section" style={{ width: '100%', boxSizing: 'border-box' }}>
+                    <div className="section-header"><MdStorefront className="section-icon" /><h3>Store Hours</h3></div>
+                    
+                    <div className="time-inputs" style={{display:'flex', gap:'10px', marginBottom:'15px', flexWrap: 'wrap'}}>
+                        <div style={{flex: '1 1 120px'}}>
+                            <label style={{fontSize:'0.85rem', color:'#666', marginBottom:'5px', display:'block'}}>Opening</label>
+                            <input type="time" className="admin-input" value={openTime} onChange={(e) => setOpenTime(e.target.value)} style={{width: '100%', boxSizing: 'border-box'}} />
+                        </div>
+                        <div style={{flex: '1 1 120px'}}>
+                            <label style={{fontSize:'0.85rem', color:'#666', marginBottom:'5px', display:'block'}}>Closing</label>
+                            <input type="time" className="admin-input" value={closeTime} onChange={(e) => setCloseTime(e.target.value)} style={{width: '100%', boxSizing: 'border-box'}} />
+                        </div>
+                    </div>
+                    
+                    <button className="save-status-btn" onClick={saveDailyHours} style={{width:'100%', padding:'10px', background:'#28a745', color:'#fff', border:'none', borderRadius:'5px', cursor:'pointer', fontWeight:'bold'}}>
+                        Save Hours
                     </button>
-                }
-            </div>
-        </div>
+                    
+                    <hr className="divider" style={{margin:'25px 0', border:'none', borderTop:'1px solid #ddd'}} />
+                    
+                    <h4 style={{display:'flex', alignItems:'center', gap:'8px', marginBottom:'15px'}}><FaCalendarAlt /> Holiday Mode</h4>
+                    
+                    {isHolidayActive && (
+                        <div style={{background:'#fff3cd', border:'1px solid #ffc107', padding:'10px', borderRadius:'5px', marginBottom:'15px', fontSize:'0.9rem'}}>
+                            ⚠️ <strong className='text-black'>Shop Closed</strong>
+                        </div>
+                    )}
+                    
+                    <div style={{marginBottom:'10px'}}>
+                        <label style={{fontSize:'0.85rem', color:'#666', marginBottom:'5px', display:'block'}}>Start</label>
+                        <input type="datetime-local" className="admin-input" value={holidayStart} onChange={(e) => setHolidayStart(e.target.value)} style={{width: '100%', boxSizing: 'border-box'}} />
+                    </div>
+                    <div style={{marginBottom:'15px'}}>
+                        <label style={{fontSize:'0.85rem', color:'#666', marginBottom:'5px', display:'block'}}>End</label>
+                        <input type="datetime-local" className="admin-input" value={holidayEnd} onChange={(e) => setHolidayEnd(e.target.value)} style={{width: '100%', boxSizing: 'border-box'}} />
+                    </div>
+                    
+                    {isHolidayActive ? 
+                        <button className="btn-holiday-off" onClick={clearHolidayMode} style={{width: '100%'}}>Reopen Shop</button> :
+                        <button className="admin-btn-save" style={{background: '#d32f2f', width:'100%', padding:'10px'}} onClick={setHolidayMode}>Close Shop</button>
+                    }
+                </div>
+            
+            </div> 
         </div>
     );
   };
@@ -1123,14 +1168,14 @@ function AdminDashboard() {
                     type="file" 
                     accept="image/*"
                     onChange={(e) => handleImageFileChange(e, 'MENU')}
-                    style={{marginBottom:'10px', padding:'5px'}} 
+                    style={{marginBottom:'0px', padding:'0px'}} 
                 />
                 <input type="text" placeholder="https://..." className="admin-input" value={image} onChange={(e) => setImage(e.target.value)} />
                 {image && <img src={image} alt="Preview" style={{width:'50px', height:'50px', borderRadius:'5px', marginTop:'5px', objectFit:'cover', border:'1px solid #666'}} />}
             </div>
             <div className="form-group"><label>Description</label><textarea placeholder="Description..." className="admin-input" rows="2" value={desc} onChange={(e) => setDesc(e.target.value)}></textarea></div>
             <div className="variations-section">
-                <label style={{ fontWeight: 'bold' }}>Variations</label>
+                <label style={{ fontWeight: '600', color: '#555' }}>Variations</label>
                 {variants.map((variant, index) => (
                     <div key={index} className="variation-row">
                         <input type="text" placeholder="Size" className="admin-input" value={variant.name} onChange={(e) => handleVariantChange(index, 'name', e.target.value)} />
@@ -1197,6 +1242,34 @@ function AdminDashboard() {
     </div>
   );
 
+  const handleSavePromo = async () => {
+    if (!promoCode || !discountValue || !startDate || !endDate) {
+        toast.error("Please fill all promo details!");
+        return;
+    }
+
+    setIsPromoLoading(true);
+
+    const { error } = await supabase
+        .from('promo_codes')
+        .insert([{
+            code: promoCode.toUpperCase(), 
+            discount_type: discountType,
+            value: parseFloat(discountValue),
+            start_date: startDate,
+            end_date: endDate
+        }]);
+
+    if (error) {
+        console.error(error);
+        toast.error("Failed to add Promo Code!");
+    } else {
+        toast.success("Promo Rules Saved!");
+        setShowPromoModal(false);
+    }
+    setIsPromoLoading(false);
+  };
+
 
   return (
     <div className="dashboard-container">
@@ -1219,14 +1292,12 @@ function AdminDashboard() {
         {activeTab === 'reviews' && renderReviews()}
       </div>
       
-      {/* GENERIC DELETE CONFIRMATION */}
       {showDeleteModal && (
         <div className="modal-overlay">
             <div className="delete-modal"><div className="delete-icon-circle">⚠️</div><h3>Confirm Delete?</h3><p>Are you sure you want to delete this?</p><div className="delete-actions"><button className="cancel-btn-modal" onClick={() => setShowDeleteModal(false)}>Cancel</button><button className="confirm-delete-btn" onClick={confirmDelete}>Delete</button></div></div>
         </div>
       )}
 
-      {/* NEW: BANNER SELECTION MODAL */}
       {showBannerSelector && (
           <div className="modal-overlay">
               <div className="modal-content" style={{maxWidth:'500px'}}>
@@ -1243,6 +1314,7 @@ function AdminDashboard() {
               </div>
           </div>
       )}
+
     </div>
   );
 }
