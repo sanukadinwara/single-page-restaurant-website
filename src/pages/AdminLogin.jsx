@@ -44,7 +44,7 @@ function AdminLogin() {
   };
 
   useEffect(() => {
-    const isAdmin = sessionStorage.getItem('pizzaAdminLogin');
+    const isAdmin = sessionStorage.getItem('pizzaAdminToken');
     if (isAdmin) {
       navigate('/admin/dashboard');
     }

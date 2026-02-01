@@ -41,6 +41,7 @@ function AdminDashboard() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [isPromoLoading, setIsPromoLoading] = useState(false);
+  const [deleteType, setDeleteType] = useState('');
 
   const [orderSearch, setOrderSearch] = useState('');
   
@@ -619,6 +620,7 @@ function AdminDashboard() {
 
   const handleDeleteClick = (id) => { 
       setDeleteId(id); 
+      setDeleteType('MENU');
       setBannerActionType('');
       setShowDeleteModal(true); 
   };
@@ -1168,7 +1170,7 @@ function AdminDashboard() {
                     type="file" 
                     accept="image/*"
                     onChange={(e) => handleImageFileChange(e, 'MENU')}
-                    style={{marginBottom:'0px', padding:'0px'}} 
+                    style={{marginBottom:'10px', padding:'0px'}} 
                 />
                 <input type="text" placeholder="https://..." className="admin-input" value={image} onChange={(e) => setImage(e.target.value)} />
                 {image && <img src={image} alt="Preview" style={{width:'50px', height:'50px', borderRadius:'5px', marginTop:'5px', objectFit:'cover', border:'1px solid #666'}} />}
