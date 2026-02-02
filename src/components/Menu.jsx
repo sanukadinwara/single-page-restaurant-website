@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { FaHeart, FaRegHeart } from 'react-icons/fa';
 
-function Menu({ menuItems, openModel, favorites, toggleFavorite, isShopOpen }){
+function Menu({ menuItems, openModel, favorites, toggleFavorite, isShopOpen, activeCategory, setActiveCategory }){
 
-    const [activeCategory, setActiveCategory] = useState("Pizza");
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (menuItems && menuItems.length > 0) {
+            setLoading(false);
+        } else {
+            const timer = setTimeout(() => setLoading(false), 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [menuItems]);
 
     const categories = [
         { name: "Pizza", icon: "🍕" },
@@ -16,6 +25,14 @@ function Menu({ menuItems, openModel, favorites, toggleFavorite, isShopOpen }){
     const filteredItems = menuItems.filter(item => 
         item.category?.toLowerCase() === activeCategory.toLowerCase()
     );
+
+    if (loading) {
+    return (
+      <div className="loader-container">
+        <div className="spinner"></div>
+      </div>
+    );
+    }
 
     return(
         <section id="menu" className="menu-section">

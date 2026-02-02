@@ -18,14 +18,18 @@ import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 
 const MainShop = () => {
+  const [loading, setLoading] = useState(true);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [menuItems, setMenuItems] = useState([]);
   const [cartItems, setCartItems] = useState([]);
   const [showFavorites, setShowFavorites] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showMyOrders, setShowMyOrders] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("Pizza");
 
   const [shopStatus, setShopStatus] = useState({ isOpen: true, message: '', type: '' });
+  const [currentWord, setCurrentWord] = useState(0);
+  const loadingWords = ["Heating up the Oven... 🔥", "Rolling the Dough... 🍕", "Adding Fresh Toppings... 🍅", "Almost Ready... 🚀"];
 
   useEffect(() => {
       const fetchMenu = async () => {
@@ -70,7 +74,28 @@ const MainShop = () => {
        }
     };
     fetchLatestStatus();
+  }, [myOrders.length]); 
 
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+
+  useEffect(() => {
+    if (loading) {
+      const interval = setInterval(() => {
+        setCurrentWord((prev) => (prev + 1) % loadingWords.length);
+      }, 2000); 
+      return () => clearInterval(interval);
+    }
+  }, [loading]);
+
+
+  useEffect(() => {
     const channel = supabase
       .channel('realtime-orders')
       .on(
@@ -92,7 +117,7 @@ const MainShop = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []); 
+  }, []);
 
   useEffect(() => {
     checkShopStatus();
@@ -311,6 +336,17 @@ const MainShop = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="loader-container" style={{flexDirection: 'column'}}>
+        <div className="spinner"></div>
+        <p key={currentWord} className="loading-text">
+            {loadingWords[currentWord]}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div>
       {!shopStatus.isOpen && shopStatus.message && (
@@ -328,6 +364,8 @@ const MainShop = () => {
         toggleCart={() => setIsCartOpen(true)} 
         toggleFavorites={() => setShowFavorites(true)}
         toggleMyOrders={() => setShowMyOrders(true)}
+        menuItems={menuItems}  
+        setActiveCategory={setActiveCategory}
       />
       <PromoBanner />
       <Hero/>
@@ -335,7 +373,7 @@ const MainShop = () => {
       <div id="about"><About/></div>
       <div id="stats"><Stats /></div>
       <div id="menu">
-        <Menu menuItems={menuItems} openModel={openModel} favorites={favorites} toggleFavorite={toggleFavorite} isShopOpen={shopStatus.isOpen} />
+        <Menu menuItems={menuItems} openModel={openModel} favorites={favorites} toggleFavorite={toggleFavorite} isShopOpen={shopStatus.isOpen} activeCategory={activeCategory} setActiveCategory={setActiveCategory}/>
       </div>
       <div id="reviews"><Reviews /></div>
 

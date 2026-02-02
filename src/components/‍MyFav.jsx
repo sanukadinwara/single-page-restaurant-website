@@ -30,9 +30,10 @@ function Favorites({ favorites = [], menuItems = [], closeFavorites, toggleFavor
               <div key={item.id} style={{display:'flex', alignItems:'center', marginBottom:'15px', borderBottom:'1px solid #eee', paddingBottom:'10px'}}>
                 
                 <img 
-                    src={item.image || "https://placehold.co/60x60?text=Pizza"} 
+                    src={item.image_url || item.image || "https://placehold.co/60x60?text=No+Image"}
                     alt={item.name} 
                     style={{width: '60px', height: '60px', borderRadius: '5px', objectFit:'cover'}} 
+                    onError={(e) => {e.target.src = "https://placehold.co/60x60?text=Error"}}
                 />
                 
                 <div style={{flex: 1, marginLeft: '15px', textAlign: 'left'}}>
