@@ -53,6 +53,13 @@ const MainShop = () => {
   });
 
   useEffect(() => {
+    const savedOrders = localStorage.getItem('myOrders');
+    if (savedOrders) {
+      setMyOrders(JSON.parse(savedOrders));
+    }
+  }, []);
+
+  useEffect(() => {
     localStorage.setItem('myOrders', JSON.stringify(myOrders));
   }, [myOrders]);
 
