@@ -131,19 +131,34 @@ function AdminDashboard() {
   }, []);
 
   useEffect(() => {
+
+    fetchOrders();
+
     const channel = supabase
-      .channel('admin-dashboard-changes')
+      .channel('realtime-orders') 
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
+        { event: '*', schema: 'public', table: 'orders' }, // ඕනම වෙනස්කමක් අල්ලගන්න
         (payload) => {
           
           if (payload.eventType === 'INSERT') {
-             const audio = new Audio('/notification.mp3');
-             audio.play().catch((e) => console.log("Audio play error:", e));
-          }
+            console.log('New Order Received:', payload.new);
+            
+            const audio = new Audio('/notification.mp3');
+            audio.play().catch(e => console.log("Audio error:", e));
 
-          fetchOrders();
+            setOrders((prevOrders) => [payload.new, ...prevOrders]);
+          } 
+
+          else if (payload.eventType === 'UPDATE') {
+            console.log('Order Updated:', payload.new);
+            
+            setOrders((prevOrders) => 
+              prevOrders.map((order) => 
+                order.id === payload.new.id ? payload.new : order
+              )
+            );
+          }
         }
       )
       .subscribe();
@@ -1113,12 +1128,12 @@ function AdminDashboard() {
       <div className="table-container mb-40">
         <table className="admin-table">
             <thead>
-            <tr><th style={{width: '60px'}}>ID</th><th style={{width: '150px'}}>Date</th><th style={{width: '250px'}}>Customer</th><th>Items & Total</th><th style={{width: '150px'}}>Status</th></tr>
+            <tr><th>ID</th><th style={{width: '150px'}}>Date</th><th style={{width: '250px'}}>Customer</th><th>Items & Total</th><th style={{width: '150px'}}>Status</th></tr>
             </thead>
             <tbody>
             {activeOrders.map(order => (
                 <tr key={order.id}>
-                <td><strong>#{order.id}</strong></td>
+                <td style={{fontWeight: 'bold', color: '#333'}}>#{order.id}</td>
                 <td><div className="date-time-box"><div className="date-text">{new Date(order.created_at).toLocaleDateString()}</div><div className="time-text">{new Date(order.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div></td>
                 <td><div className="customer-box"><div className="cust-name">{order.customer_name}</div><div className="cust-phone">{order.customer_phone}</div><div className="cust-addr">{order.customer_address}</div></div></td>
                 <td><div className="items-box"><div className="item-list">{order.items && order.items.map((i,idx)=><span key={idx}>{i.name} x {i.quantity}<br/></span>)}</div><div className="price-tag-large">Rs. {order.total_price}</div></div></td>
