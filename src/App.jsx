@@ -319,7 +319,13 @@ const MainShop = () => {
             total: total,
             status: 'Pending'
         };
-        setMyOrders([...myOrders, newLocalOrder]);
+        
+
+        const updatedOrderList = [...myOrders, newLocalOrder];
+
+        setMyOrders(updatedOrderList);
+
+        localStorage.setItem('myOrders', JSON.stringify(updatedOrderList));
 
         let msg = `🍕 *New Order #${data[0].id}* 🍕\n\n`;
         cartItems.forEach(i => msg += `${i.name} x ${i.quantity}\n`);
@@ -334,7 +340,7 @@ const MainShop = () => {
         setCustAddress('');
         toast.success("Order Placed Successfully!");
     }
-  };
+};
 
   if (loading) {
     return (
