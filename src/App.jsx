@@ -55,9 +55,9 @@ const MainShop = () => {
   useEffect(() => {
     const savedOrders = localStorage.getItem('myOrders');
     if (savedOrders) {
-      setMyOrders(JSON.parse(savedOrders));
+        setMyOrders(JSON.parse(savedOrders));
     }
-  }, []);
+}, []);
 
   useEffect(() => {
     localStorage.setItem('myOrders', JSON.stringify(myOrders));
@@ -326,13 +326,12 @@ const MainShop = () => {
             total: total,
             status: 'Pending'
         };
-        
 
-        const updatedOrderList = [...myOrders, newLocalOrder];
+        const currentOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+        currentOrders.push(newLocalOrder);
+        localStorage.setItem('myOrders', JSON.stringify(currentOrders));
 
-        setMyOrders(updatedOrderList);
-
-        localStorage.setItem('myOrders', JSON.stringify(updatedOrderList));
+        setMyOrders(currentOrders);
 
         let msg = `🍕 *New Order #${data[0].id}* 🍕\n\n`;
         cartItems.forEach(i => msg += `${i.name} x ${i.quantity}\n`);
