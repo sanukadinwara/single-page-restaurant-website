@@ -325,7 +325,7 @@ const MainShop = () => {
         cartItems.forEach(i => msg += `${i.name} x ${i.quantity}\n`);
         msg += `\nTotal: Rs. ${total}\n\n👤 ${custName}\n📞 ${custPhone}\n🏠 ${custAddress}`;
         
-        window.open(`https://wa.me/9477xxxxxxx?text=${encodeURIComponent(msg)}`, "_blank");
+        window.open(`https://wa.me/94710993625?text=${encodeURIComponent(msg)}`, "_blank");
         
         setShowCheckoutModal(false);
         setCartItems([]);

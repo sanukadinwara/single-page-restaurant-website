@@ -87,7 +87,7 @@ const Cart = ({ cartItems, onClose, removeFromCart, cart, isShopOpen }) => {
         return; 
     }
 
-    const phoneNumber = "947xxxxxxxx"; 
+    const phoneNumber = "94710993625"; 
 
     let message = `*🍕 New Order via Pizza Palace App* \n`;
     message += `----------------------------\n`;
