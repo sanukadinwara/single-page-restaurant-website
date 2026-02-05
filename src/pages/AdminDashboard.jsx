@@ -130,7 +130,7 @@ function AdminDashboard() {
     checkUser();
   }, []);
 
-  seEffect(() => {
+  useEffect(() => {
     const channel = supabase
       .channel('admin-dashboard-changes')
       .on(
