@@ -465,8 +465,8 @@ button:disabled:hover {
   background: rgba(255, 255, 255, 0.1);
   border: 2px solid #ff9f1c;
   color: #ff9f1c;
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
   padding: 15px 40px;
   font-size: 1.2rem;
   border-radius: 50px;
@@ -2889,7 +2889,7 @@ select.admin-input {
   }
 
   body:has(.shop-closed-banner) .navbar {
-    margin-top: 100px;
+    margin-top: 96px;
   }
 
   .footer-flex-wrapper {
@@ -3323,3 +3323,4 @@ select.admin-input {
   color: #aaa;
   font-size: 0.75rem;
 }
+
