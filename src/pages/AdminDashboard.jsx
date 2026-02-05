@@ -130,13 +130,19 @@ function AdminDashboard() {
     checkUser();
   }, []);
 
-  useEffect(() => {
+  seEffect(() => {
     const channel = supabase
       .channel('admin-dashboard-changes')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
         (payload) => {
+          
+          if (payload.eventType === 'INSERT') {
+             const audio = new Audio('/notification.mp3');
+             audio.play().catch((e) => console.log("Audio play error:", e));
+          }
+
           fetchOrders();
         }
       )
