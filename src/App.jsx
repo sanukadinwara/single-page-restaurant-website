@@ -285,10 +285,7 @@ const MainShop = () => {
 
   const confirmOrder = async () => {
     if (!shopStatus.isOpen) {
-        toast.error("Shop is closed. Cannot place orders at this time.", {
-            duration: 3000,
-            icon: '🔒'
-        });
+        toast.error("Shop is closed. Cannot place orders at this time.", { duration: 3000, icon: '🔒' });
         return;
     }
     if (!custName || !custPhone || !custAddress) { 
@@ -297,55 +294,53 @@ const MainShop = () => {
     }
     
     const total = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const tempId = Date.now();
 
     const { data, error } = await supabase
       .from('orders')
-      .insert([
-        { 
+      .insert([{ 
           customer_name: custName, 
           customer_phone: custPhone, 
           customer_address: custAddress, 
           items: cartItems, 
           total_price: total,
           status: 'Pending'
-        }
-      ])
+      }])
       .select();
 
     if (error) {
-      toast.error("Order Failed! Please try again.");
-      console.error("Order error:", error);
-      return;
+        toast.error("Network Error! But trying to save locally...");
+        console.error("Supabase Error:", error);
     }
 
-    if (data && data.length > 0) {
-        const newLocalOrder = {
-            id: data[0].id, 
-            date: new Date().toLocaleDateString(), 
-            items: [...cartItems], 
-            total: total,
-            status: 'Pending'
-        };
+    const finalOrderId = (data && data.length > 0) ? data[0].id : tempId;
+    
+    const newLocalOrder = {
+        id: finalOrderId, 
+        date: new Date().toLocaleDateString(), 
+        items: [...cartItems], 
+        total: total,
+        status: 'Pending'
+    };
 
-        const currentOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
-        currentOrders.push(newLocalOrder);
-        localStorage.setItem('myOrders', JSON.stringify(currentOrders));
+    const currentOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+    currentOrders.push(newLocalOrder);
+    localStorage.setItem('myOrders', JSON.stringify(currentOrders)); 
 
-        setMyOrders(currentOrders);
+    setMyOrders(currentOrders);
 
-        let msg = `🍕 *New Order #${data[0].id}* 🍕\n\n`;
-        cartItems.forEach(i => msg += `${i.name} x ${i.quantity}\n`);
-        msg += `\nTotal: Rs. ${total}\n\n👤 ${custName}\n📞 ${custPhone}\n🏠 ${custAddress}`;
-        
-        window.open(`https://wa.me/94710993625?text=${encodeURIComponent(msg)}`, "_blank");
-        
-        setShowCheckoutModal(false);
-        setCartItems([]);
-        setCustName('');
-        setCustPhone('');
-        setCustAddress('');
-        toast.success("Order Placed Successfully!");
-    }
+    let msg = `🍕 *New Order #${finalOrderId}* 🍕\n\n`;
+    cartItems.forEach(i => msg += `${i.name} x ${i.quantity}\n`);
+    msg += `\nTotal: Rs. ${total}\n\n👤 ${custName}\n📞 ${custPhone}\n🏠 ${custAddress}`;
+    
+    window.open(`https://wa.me/94710993625?text=${encodeURIComponent(msg)}`, "_blank");
+    
+    setShowCheckoutModal(false);
+    setCartItems([]);
+    setCustName('');
+    setCustPhone('');
+    setCustAddress('');
+    toast.success("Order Placed & Saved!");
 };
 
   if (loading) {
