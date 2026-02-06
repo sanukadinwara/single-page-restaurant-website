@@ -98,9 +98,11 @@ const Cart = ({ cartItems, onClose, removeFromCart, cart, isShopOpen }) => {
     message += `*ORDER ITEMS:* \n`;
     
     finalCart.forEach((item, index) => {
-    const letter = String.fromCharCode(97 + index); 
+    const letter = String.fromCharCode(97 + index);
 
-    message += `${letter}) ${item.name} x ${item.quantity} = Rs. ${item.price.toFixed(2) * item.quantity}\n`;
+    const itemTotal = (item.price * item.quantity).toFixed(2);
+
+    message += `${letter}) ${item.name} x ${item.quantity} = Rs. ${itemTotal}\n`;
     });
 
     message += `\n----------------------------\n`;
@@ -113,7 +115,7 @@ const Cart = ({ cartItems, onClose, removeFromCart, cart, isShopOpen }) => {
 
     message += `*NET TOTAL: Rs. ${grandTotal.toFixed(2)}* \n`; 
     message += `----------------------------\n`;
-    message += `Please confirm my order!`;
+    message += `*Please confirm my order!*`;
 
     const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
