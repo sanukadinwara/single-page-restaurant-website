@@ -631,9 +631,18 @@ function AdminDashboard() {
               fetchAllReviews();
           }
       }
+      else if (deleteType === 'ORDER') {
+          ({ error } = await supabase.from('orders').delete().eq('id', deleteId));
+          if (!error) {
+              fetchOrders();
+              toast.success("Order Deleted Successfully!");
+          }
+      }
 
       if (!error) {
-          toast.success("Deleted Successfully!");
+          if (deleteType !== 'ORDER') {
+              toast.success("Deleted Successfully!");
+          }
       } else {
           toast.error("Delete Failed!");
       }
@@ -1150,51 +1159,101 @@ function AdminDashboard() {
       <div className="table-container mb-40">
         <table className="admin-table">
             <thead>
-            <tr><th>ID</th><th style={{width: '150px'}}>Date & Time</th><th style={{width: '250px'}}>Customer</th><th>Items & Total</th><th style={{width: '150px'}}>Status</th></tr>
+            <tr>
+                <th>Order ID</th>
+                <th>Date & Time</th>
+                <th>Customer</th>
+                <th>Order Details</th>
+                <th>Status</th>
+            </tr>
             </thead>
             <tbody>
-            {activeOrders.map((order) => (
+            {activeOrders.length === 0 ? (
+                <tr><td colSpan="5" style={{textAlign:'center', padding:'20px', color:'#888'}}>No active orders</td></tr>
+            ) : (
+                activeOrders.map((order) => (
                 <tr key={order.id} style={{ borderBottom: '1px solid #eee' }}>
                 
-                <td style={{ padding: '10px', fontWeight: 'bold' }}>#{order.id}</td>
+                <td style={{ padding: '12px', fontWeight: 'bold', fontSize: '1rem' }}>
+                    #{order.id}
+                </td>
 
-                <td style={{ padding: '10px' }}>
-                    <div>{new Date(order.created_at).toLocaleDateString()}</div>
-                    <div style={{ fontSize: '11px', color: '#666' }}>
-                        {new Date(order.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                <td style={{ padding: '12px' }}>
+                    <div style={{ fontWeight: '600', color: '#333' }}>
+                        {new Date(order.created_at).toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric' 
+                        })}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                        {new Date(order.created_at).toLocaleTimeString('en-US', { 
+                            hour: 'numeric', 
+                            minute: '2-digit', 
+                            hour12: true 
+                        })}
                     </div>
                 </td>
 
-                <td style={{ padding: '10px' }}>
-                    <div style={{ fontWeight: 'bold' }}>{order.customer_name}</div>
-                    <div style={{ color: 'blue', fontSize: '12px' }}>📞 {order.customer_phone}</div>
-                    <div style={{ color: '#666', fontSize: '12px' }}>🏠 {order.customer_address}</div>
-                </td>
-
-                <td style={{ padding: '10px' }}>
-                    Rs. {order.total_price}
-                    <div style={{ fontSize: '11px', color: '#555' }}>
-                    {order.items && order.items.map(i => `${i.name} x${i.quantity}, `)}
+                <td style={{ padding: '12px' }}>
+                    <div style={{ fontWeight: '600', color: '#333', marginBottom: '6px' }}>
+                        {order.customer_name}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#0066cc', marginBottom: '4px' }}>
+                        📞 {order.customer_phone}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#666', lineHeight: '1.4' }}>
+                        🏠 {order.customer_address}
                     </div>
                 </td>
 
-                <td style={{ padding: '10px' }}>
+                <td style={{ padding: '12px' }}>
+                    <div style={{ marginBottom: '8px' }}>
+                        {order.items && order.items.map((item, idx) => (
+                            <div key={idx} style={{ fontSize: '13px', color: '#555', marginBottom: '3px' }}>
+                                • {item.name} x{item.quantity}
+                            </div>
+                        ))}
+                    </div>
+                    <div style={{ 
+                        fontWeight: 'bold', 
+                        color: '#ff9f1c', 
+                        fontSize: '15px',
+                        marginTop: '6px',
+                        paddingTop: '6px',
+                        borderTop: '1px solid #eee'
+                    }}>
+                        Total: Rs. {Number(order.total_price).toLocaleString()}
+                    </div>
+                </td>
+
+                <td style={{ padding: '12px' }}>
                     <select 
-                    value={order.status} 
-                    onChange={(e) => handleStatusChange(order, e.target.value)}
-                    style={{ padding: '5px', borderRadius: '5px', border: '1px solid #ccc' }}
+                        value={order.status} 
+                        onChange={(e) => handleStatusChange(order, e.target.value)}
+                        style={{ 
+                            padding: '8px 12px', 
+                            borderRadius: '6px', 
+                            border: '2px solid #ddd',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            background: '#fff',
+                            color: '#333',
+                            minWidth: '130px'
+                        }}
                     >
-                    <option value="Pending">Pending</option>
-                    <option value="Cooking">Cooking</option>
-                    <option value="Ready">Ready</option>
-                    <option value="Delivered">Delivered</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Cancelled">Cancelled</option>
+                        <option value="Pending">⏳ Pending</option>
+                        <option value="Cooking">👨‍🍳 Cooking</option>
+                        <option value="Ready">✅ Ready</option>
+                        <option value="Delivered">🚚 Delivered</option>
+                        <option value="Completed">✔️ Completed</option>
+                        <option value="Cancelled">❌ Cancelled</option>
                     </select>
                 </td>
 
                 </tr>
-            ))}
+            )))}
             </tbody>
         </table>
       </div>
@@ -1205,18 +1264,55 @@ function AdminDashboard() {
       </div>
       <div className="table-container">
         <table className="admin-table">
-            <thead><tr><th>ID</th><th>Date</th><th>Customer</th><th>Total</th><th>Status</th></tr></thead>
-            <tbody>
-            {filteredPastOrders.map(order => (
-                <tr key={order.id} className="past-order-row">
-                <td><strong>#{order.id}</strong></td>
-                <td>{new Date(order.created_at).toLocaleDateString()}</td>
-                <td>{order.customer_name} ({order.customer_phone})</td>
-                <td>Rs. {order.total_price}</td>
-                <td><span className="status-badge completed">Completed</span></td>
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Date</th>
+                    <th>Customer</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Action</th>
                 </tr>
-            ))}
-            {filteredPastOrders.length === 0 && <tr><td colSpan="5" style={{textAlign:'center', padding:'20px', color:'#888'}}>No past orders found.</td></tr>}
+            </thead>
+            <tbody>
+            {filteredPastOrders.length === 0 ? (
+                <tr><td colSpan="6" style={{textAlign:'center', padding:'20px', color:'#888'}}>No past orders found.</td></tr>
+            ) : (
+                filteredPastOrders.map(order => (
+                <tr key={order.id} className="past-order-row">
+                    <td style={{fontWeight: 'bold'}}>#{order.id}</td>
+                    <td>{new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</td>
+                    <td>
+                        <div>{order.customer_name}</div>
+                        <small style={{color:'#0066cc'}}>{order.customer_phone}</small>
+                    </td>
+                    <td style={{fontWeight: '600', color: '#ff9f1c'}}>Rs. {Number(order.total_price).toLocaleString()}</td>
+                    <td><span className="status-badge completed">✔️ Completed</span></td>
+                    <td>
+                        <button 
+                            className="delete-icon-btn" 
+                            onClick={() => { 
+                                setDeleteId(order.id); 
+                                setDeleteType('ORDER'); 
+                                setShowDeleteModal(true); 
+                            }}
+                            style={{
+                                background: '#dc3545',
+                                color: '#fff',
+                                border: 'none',
+                                padding: '6px 10px',
+                                borderRadius: '5px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '5px'
+                            }}
+                        >
+                            <FaTrashAlt />
+                        </button>
+                    </td>
+                </tr>
+            )))}
             </tbody>
         </table>
       </div>
