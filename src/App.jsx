@@ -49,15 +49,13 @@ const MainShop = () => {
   useEffect(() => localStorage.setItem('myFavorites', JSON.stringify(favorites)), [favorites]);
 
   const [myOrders, setMyOrders] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('myOrders')) || []; } catch { return []; }
-  });
-
-  useEffect(() => {
-    const savedOrders = localStorage.getItem('myOrders');
-    if (savedOrders) {
-        setMyOrders(JSON.parse(savedOrders));
+    try { 
+      const saved = localStorage.getItem('myOrders');
+      return saved ? JSON.parse(saved) : [];
+    } catch { 
+      return []; 
     }
-}, []);
+  });
 
   useEffect(() => {
     localStorage.setItem('myOrders', JSON.stringify(myOrders));
@@ -288,7 +286,7 @@ const MainShop = () => {
     if (!custName || !custPhone || !custAddress) { toast.error("Fill details!"); return; }
     
     const total = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    const tempID = Date.now();
+    const orderDate = new Date();
 
     const { data, error } = await supabase
       .from('orders')
@@ -302,21 +300,33 @@ const MainShop = () => {
       }])
       .select();
 
-    const finalID = (data && data.length > 0) ? data[0].id : tempID;
+    if (error) {
+        console.error("Order submission error:", error);
+        toast.error("Failed to place order!");
+        return;
+    }
+
+    const finalID = (data && data.length > 0) ? data[0].id : Date.now();
+    const createdAt = (data && data.length > 0) ? data[0].created_at : orderDate.toISOString();
 
     const newLocalOrder = {
         id: finalID, 
-        date: new Date().toLocaleDateString(), 
+        date: new Date(createdAt).toLocaleDateString(), 
+        time: new Date(createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+        customerName: custName,
+        customerPhone: custPhone,
+        customerAddress: custAddress,
         items: [...cartItems], 
         total: total,
-        status: 'Pending'
+        status: 'Pending',
+        created_at: createdAt
     };
 
-    const currentOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
-    const updatedOrders = [...currentOrders, newLocalOrder];
-    
-    localStorage.setItem('myOrders', JSON.stringify(updatedOrders));
-    setMyOrders(updatedOrders);
+    setMyOrders(prevOrders => {
+        const updatedOrders = [newLocalOrder, ...prevOrders];
+        localStorage.setItem('myOrders', JSON.stringify(updatedOrders));
+        return updatedOrders;
+    });
 
     let msg = `🍕 *New Order #${finalID}* 🍕\n\n`;
     cartItems.forEach(i => msg += `${i.name} x ${i.quantity}\n`);

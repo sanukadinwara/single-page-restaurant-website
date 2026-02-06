@@ -69,6 +69,9 @@ function AdminDashboard() {
   const [orders, setOrders] = useState([]); 
   const [reviewsList, setReviewsList] = useState([]);
 
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [orderToComplete, setOrderToComplete] = useState(null);
+
   const uploadToCloudinary = async (file) => {
     const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = import.meta.env.VITE_CLOUDINARY_PRESET;  
@@ -138,7 +141,7 @@ function AdminDashboard() {
       .channel('realtime-orders') 
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' }, // ඕනම වෙනස්කමක් අල්ලගන්න
+        { event: '*', schema: 'public', table: 'orders' },
         (payload) => {
           
           if (payload.eventType === 'INSERT') {
@@ -148,6 +151,8 @@ function AdminDashboard() {
             audio.play().catch(e => console.log("Audio error:", e));
 
             setOrders((prevOrders) => [payload.new, ...prevOrders]);
+            
+            toast.success(`New Order #${payload.new.id} Received! 🔔`, { duration: 4000 });
           } 
 
           else if (payload.eventType === 'UPDATE') {
@@ -873,6 +878,23 @@ function AdminDashboard() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleStatusChange = (order, newStatus) => {
+    if (newStatus === 'Completed') {
+        setOrderToComplete(order);
+        setShowCompleteModal(true);
+    } else {
+        saveOrderStatus(order.id, newStatus);
+    }
+  };
+
+  const confirmCompleteOrder = async () => {
+    if (!orderToComplete) return;
+    
+    await saveOrderStatus(orderToComplete.id, 'Completed');
+    setShowCompleteModal(false);
+    setOrderToComplete(null);
+  };
+
   const saveOrderStatus = async (id, newStatus) => {
     const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', id);
     if (!error) toast.success(`Order #${id} Updated!`);
@@ -1128,7 +1150,7 @@ function AdminDashboard() {
       <div className="table-container mb-40">
         <table className="admin-table">
             <thead>
-            <tr><th>ID</th><th style={{width: '150px'}}>Date</th><th style={{width: '250px'}}>Customer</th><th>Items & Total</th><th style={{width: '150px'}}>Status</th></tr>
+            <tr><th>ID</th><th style={{width: '150px'}}>Date & Time</th><th style={{width: '250px'}}>Customer</th><th>Items & Total</th><th style={{width: '150px'}}>Status</th></tr>
             </thead>
             <tbody>
             {activeOrders.map((order) => (
@@ -1137,7 +1159,10 @@ function AdminDashboard() {
                 <td style={{ padding: '10px', fontWeight: 'bold' }}>#{order.id}</td>
 
                 <td style={{ padding: '10px' }}>
-                    {new Date(order.created_at).toLocaleDateString()}
+                    <div>{new Date(order.created_at).toLocaleDateString()}</div>
+                    <div style={{ fontSize: '11px', color: '#666' }}>
+                        {new Date(order.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                    </div>
                 </td>
 
                 <td style={{ padding: '10px' }}>
@@ -1156,7 +1181,7 @@ function AdminDashboard() {
                 <td style={{ padding: '10px' }}>
                     <select 
                     value={order.status} 
-                    onChange={(e) => saveOrderStatus(order.id, e.target.value)}
+                    onChange={(e) => handleStatusChange(order, e.target.value)}
                     style={{ padding: '5px', borderRadius: '5px', border: '1px solid #ccc' }}
                     >
                     <option value="Pending">Pending</option>
@@ -1343,6 +1368,20 @@ function AdminDashboard() {
       {showDeleteModal && (
         <div className="modal-overlay">
             <div className="delete-modal"><div className="delete-icon-circle">⚠️</div><h3>Confirm Delete?</h3><p>Are you sure you want to delete this?</p><div className="delete-actions"><button className="cancel-btn-modal" onClick={() => setShowDeleteModal(false)}>Cancel</button><button className="confirm-delete-btn" onClick={confirmDelete}>Delete</button></div></div>
+        </div>
+      )}
+
+      {showCompleteModal && (
+        <div className="modal-overlay">
+            <div className="delete-modal">
+                <div className="delete-icon-circle">✅</div>
+                <h3>Mark as Completed?</h3>
+                <p>Order #{orderToComplete?.id} will be moved to Past Orders.</p>
+                <div className="delete-actions">
+                    <button className="cancel-btn-modal" onClick={() => { setShowCompleteModal(false); setOrderToComplete(null); }}>Cancel</button>
+                    <button className="confirm-delete-btn" style={{background: '#28a745'}} onClick={confirmCompleteOrder}>Confirm</button>
+                </div>
+            </div>
         </div>
       )}
 
