@@ -329,12 +329,12 @@ const MainShop = () => {
     
     window.open(`https://wa.me/94710993625?text=${encodeURIComponent(msg)}`, "_blank");
     
-    setShowCheckoutModal(false);
-    setCartItems([]);
-    setCustName('');
-    setCustPhone('');
-    setCustAddress('');
-    toast.success("Order Placed Successfully!");
+    toast.success("Order Placed! Refreshing...");
+    
+    setTimeout(() => {
+       window.location.reload(); 
+    }, 1000);
+
 };
 
   if (loading) {
