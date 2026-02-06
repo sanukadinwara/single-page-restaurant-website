@@ -285,16 +285,28 @@ const MainShop = () => {
 
   const confirmOrder = async () => {
     if (!shopStatus.isOpen) {
-        toast.error("Shop is closed. Cannot place orders at this time.", { duration: 3000, icon: '🔒' });
-        return;
+        toast.error("Shop Closed!"); return;
     }
     if (!custName || !custPhone || !custAddress) { 
-        toast.error("Please fill all delivery details!");
-        return; 
+        toast.error("Fill all details!"); return; 
     }
     
     const total = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    const tempId = Date.now();
+    
+    const tempID = Date.now(); 
+
+    const newLocalOrder = {
+        id: tempID, 
+        date: new Date().toLocaleDateString(), 
+        items: [...cartItems], 
+        total: total,
+        status: 'Pending'
+    };
+
+    const currentOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+    currentOrders.push(newLocalOrder);
+    localStorage.setItem('myOrders', JSON.stringify(currentOrders));
+    setMyOrders(currentOrders); 
 
     const { data, error } = await supabase
       .from('orders')
@@ -305,31 +317,13 @@ const MainShop = () => {
           items: cartItems, 
           total_price: total,
           status: 'Pending'
-      }])
-      .select();
+      }]);
 
     if (error) {
-        toast.error("Network Error! But trying to save locally...");
-        console.error("Supabase Error:", error);
+        console.error("Supabase Error (But local saved):", error);
     }
 
-    const finalOrderId = (data && data.length > 0) ? data[0].id : tempId;
-    
-    const newLocalOrder = {
-        id: finalOrderId, 
-        date: new Date().toLocaleDateString(), 
-        items: [...cartItems], 
-        total: total,
-        status: 'Pending'
-    };
-
-    const currentOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
-    currentOrders.push(newLocalOrder);
-    localStorage.setItem('myOrders', JSON.stringify(currentOrders)); 
-
-    setMyOrders(currentOrders);
-
-    let msg = `🍕 *New Order #${finalOrderId}* 🍕\n\n`;
+    let msg = `🍕 *New Order* 🍕\n\n`;
     cartItems.forEach(i => msg += `${i.name} x ${i.quantity}\n`);
     msg += `\nTotal: Rs. ${total}\n\n👤 ${custName}\n📞 ${custPhone}\n🏠 ${custAddress}`;
     
@@ -340,7 +334,7 @@ const MainShop = () => {
     setCustName('');
     setCustPhone('');
     setCustAddress('');
-    toast.success("Order Placed & Saved!");
+    toast.success("Order Placed Successfully!");
 };
 
   if (loading) {

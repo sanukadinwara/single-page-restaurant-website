@@ -89,20 +89,22 @@ const Cart = ({ cartItems, onClose, removeFromCart, cart, isShopOpen }) => {
 
     const phoneNumber = "94710993625"; 
 
-    let message = `*🍕 New Order via Pizza Palace App* \n`;
+    let message = `*New Order via Pizza Palace App* \n`;
     message += `----------------------------\n`;
-    message += `👤 *Name:* ${customerDetails.name}\n`;
-    message += `📍 *Address:* ${customerDetails.address}\n`;
-    message += `📞 *Phone:* ${customerDetails.phone}\n`;
+    message += `1) *Name:* ${customerDetails.name}\n`;
+    message += `2) *Address:* ${customerDetails.address}\n`;
+    message += `3) *Phone:* ${customerDetails.phone}\n`;
     message += `----------------------------\n\n`;
     message += `*ORDER ITEMS:* \n`;
     
-    finalCart.forEach((item) => {
-        message += `▫️ ${item.name} x ${item.quantity} = Rs. ${item.price * item.quantity}\n`;
+    finalCart.forEach((item, index) => {
+    const letter = String.fromCharCode(97 + index); 
+
+    message += `${letter}) ${item.name} x ${item.quantity} = Rs. ${item.price.toFixed(2) * item.quantity}\n`;
     });
 
     message += `\n----------------------------\n`;
-    message += `*Subtotal:* Rs. ${subTotal}\n`;
+    message += `*Subtotal:* Rs. ${subTotal.toFixed(2)}\n`;
 
     if (promoStatus === 'valid') {
        message += `*Promo Code:* ${promoCode} ✅\n`;
@@ -111,7 +113,7 @@ const Cart = ({ cartItems, onClose, removeFromCart, cart, isShopOpen }) => {
 
     message += `*NET TOTAL: Rs. ${grandTotal.toFixed(2)}* \n`; 
     message += `----------------------------\n`;
-    message += `Please confirm my order! 🛵`;
+    message += `Please confirm my order!`;
 
     const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
