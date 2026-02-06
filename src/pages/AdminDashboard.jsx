@@ -1188,8 +1188,8 @@ function AdminDashboard() {
 
                 <td style={{ padding: '12px', verticalAlign: 'top', textAlign: 'left' }}>
                     <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '15px' }}>{order.customer_name}</div>
-                    <div style={{ color: '#333', fontSize: '13px', marginBottom: '2px' }}>{order.customer_address}</div>
-                    <div style={{ color: 'blue', fontSize: '13px' }}>{order.customer_phone}</div>
+                    <div style={{ color: '#333', fontSize: '13px', marginBottom: '2px' }}>{order.address}</div>
+                    <div style={{ color: 'blue', fontSize: '13px' }}>{order.phone}</div>
                 </td>
 
                 <td style={{ padding: '12px', verticalAlign: 'top', textAlign: 'left' }}>

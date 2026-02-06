@@ -294,8 +294,8 @@ const MainShop = () => {
       .from('orders')
       .insert([{ 
           customer_name: custName, 
-          customer_phone: custPhone, 
-          customer_address: custAddress, 
+          phone: custPhone, 
+          address: custAddress, 
           items: cartItems, 
           total_price: total,
           status: 'Pending'
@@ -332,7 +332,7 @@ const MainShop = () => {
 
     let msg = `🍕 *New Order #${finalID}* 🍕\n\n`;
     cartItems.forEach(i => msg += `${i.name} x ${i.quantity}\n`);
-    msg += `\nTotal: Rs. ${total}\n\n👤 ${custName}\n📞 ${custPhone}\n🏠 ${custAddress}`;
+    msg += `\nTotal: Rs. ${total}\n\n ${custName}\n ${custPhone}\n ${custAddress}`;
     
     setCartItems([]);
     setCustName('');
