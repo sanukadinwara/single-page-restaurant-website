@@ -36,8 +36,10 @@ const MainShop = () => {
         let { data, error } = await supabase.from('menu_items').select('*');
         if (error) {
           console.log('Error fetching menu:', error);
+          toast.error('Failed to load menu items');
         } else {
-          setMenuItems(data); 
+          console.log('Menu items loaded:', data);
+          setMenuItems(data || []); 
         }
       };
       fetchMenu();
