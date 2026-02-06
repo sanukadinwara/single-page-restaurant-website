@@ -1131,20 +1131,45 @@ function AdminDashboard() {
             <tr><th>ID</th><th style={{width: '150px'}}>Date</th><th style={{width: '250px'}}>Customer</th><th>Items & Total</th><th style={{width: '150px'}}>Status</th></tr>
             </thead>
             <tbody>
-            {activeOrders.map(order => (
-                <tr key={order.id}>
-                <td style={{fontWeight: 'bold', color: '#333'}}>#{order.id}</td>
-                <td><div className="date-time-box"><div className="date-text">{new Date(order.created_at).toLocaleDateString()}</div><div className="time-text">{new Date(order.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div></td>
-                <td><div className="customer-box"><div className="cust-name">{order.customer_name}</div><div className="cust-phone">{order.customer_phone}</div><div className="cust-addr">{order.customer_address}</div></div></td>
-                <td><div className="items-box"><div className="item-list">{order.items && order.items.map((i,idx)=><span key={idx}>{i.name} x {i.quantity}<br/></span>)}</div><div className="price-tag-large">Rs. {order.total_price}</div></div></td>
-                <td>
-                    <select className={`status-select ${order.status ? order.status.toLowerCase() : 'pending'}`} value={order.status || 'Pending'} onChange={(e) => saveOrderStatus(order.id, e.target.value)}>
-                        <option value="Pending">New</option><option value="Cooking">Cooking</option><option value="Ready">Ready</option><option value="Delivered">Delivered</option><option value="Completed">Completed</option>
+            {activeOrders.map((order) => (
+                <tr key={order.id} style={{ borderBottom: '1px solid #eee' }}>
+                
+                <td style={{ padding: '10px', fontWeight: 'bold' }}>#{order.id}</td>
+
+                <td style={{ padding: '10px' }}>
+                    {new Date(order.created_at).toLocaleDateString()}
+                </td>
+
+                <td style={{ padding: '10px' }}>
+                    <div style={{ fontWeight: 'bold' }}>{order.customer_name}</div>
+                    <div style={{ color: 'blue', fontSize: '12px' }}>📞 {order.customer_phone}</div>
+                    <div style={{ color: '#666', fontSize: '12px' }}>🏠 {order.customer_address}</div>
+                </td>
+
+                <td style={{ padding: '10px' }}>
+                    Rs. {order.total_price}
+                    <div style={{ fontSize: '11px', color: '#555' }}>
+                    {order.items && order.items.map(i => `${i.name} x${i.quantity}, `)}
+                    </div>
+                </td>
+
+                <td style={{ padding: '10px' }}>
+                    <select 
+                    value={order.status} 
+                    onChange={(e) => saveOrderStatus(order.id, e.target.value)}
+                    style={{ padding: '5px', borderRadius: '5px', border: '1px solid #ccc' }}
+                    >
+                    <option value="Pending">Pending</option>
+                    <option value="Cooking">Cooking</option>
+                    <option value="Ready">Ready</option>
+                    <option value="Delivered">Delivered</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
                     </select>
                 </td>
+
                 </tr>
             ))}
-            {activeOrders.length === 0 && <tr><td colSpan="5" style={{textAlign:'center', padding:'20px'}}>No active orders!</td></tr>}
             </tbody>
         </table>
       </div>

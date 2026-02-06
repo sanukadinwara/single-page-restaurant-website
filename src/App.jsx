@@ -284,29 +284,11 @@ const MainShop = () => {
   const [custAddress, setCustAddress] = useState('');
 
   const confirmOrder = async () => {
-    if (!shopStatus.isOpen) {
-        toast.error("Shop Closed!"); return;
-    }
-    if (!custName || !custPhone || !custAddress) { 
-        toast.error("Fill all details!"); return; 
-    }
+    if (!shopStatus.isOpen) { toast.error("Shop Closed!"); return; }
+    if (!custName || !custPhone || !custAddress) { toast.error("Fill details!"); return; }
     
     const total = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    
-    const tempID = Date.now(); 
-
-    const newLocalOrder = {
-        id: tempID, 
-        date: new Date().toLocaleDateString(), 
-        items: [...cartItems], 
-        total: total,
-        status: 'Pending'
-    };
-
-    const currentOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
-    currentOrders.push(newLocalOrder);
-    localStorage.setItem('myOrders', JSON.stringify(currentOrders));
-    setMyOrders(currentOrders); 
+    const tempID = Date.now();
 
     const { data, error } = await supabase
       .from('orders')
@@ -317,24 +299,38 @@ const MainShop = () => {
           items: cartItems, 
           total_price: total,
           status: 'Pending'
-      }]);
+      }])
+      .select();
 
-    if (error) {
-        console.error("Supabase Error (But local saved):", error);
-    }
+    const finalID = (data && data.length > 0) ? data[0].id : tempID;
 
-    let msg = `🍕 *New Order* 🍕\n\n`;
+    const newLocalOrder = {
+        id: finalID, 
+        date: new Date().toLocaleDateString(), 
+        items: [...cartItems], 
+        total: total,
+        status: 'Pending'
+    };
+
+    const currentOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+    const updatedOrders = [...currentOrders, newLocalOrder];
+    
+    localStorage.setItem('myOrders', JSON.stringify(updatedOrders));
+    setMyOrders(updatedOrders);
+
+    let msg = `🍕 *New Order #${finalID}* 🍕\n\n`;
     cartItems.forEach(i => msg += `${i.name} x ${i.quantity}\n`);
     msg += `\nTotal: Rs. ${total}\n\n👤 ${custName}\n📞 ${custPhone}\n🏠 ${custAddress}`;
     
-    window.open(`https://wa.me/94710993625?text=${encodeURIComponent(msg)}`, "_blank");
+    setCartItems([]);
+    setCustName('');
+    setCustPhone('');
+    setCustAddress('');
+    setShowCheckoutModal(false);
     
-    toast.success("Order Placed! Refreshing...");
-    
-    setTimeout(() => {
-       window.location.reload(); 
-    }, 1000);
+    toast.success("Order Placed Successfully!");
 
+    window.open(`https://wa.me/94710993625?text=${encodeURIComponent(msg)}`, "_blank");
 };
 
   if (loading) {
