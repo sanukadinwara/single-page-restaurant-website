@@ -232,17 +232,14 @@ function AdminDashboard() {
     console.log("🔍 Fetching store settings...");
     
     let { data, error } = await supabase.from('store_settings').select('*');
-    
-    console.log("Database response:", { data, error });
 
     if (error) {
-        console.error("❌ Error fetching store settings:", error);
-        toast.error("Error loading store settings");
+        console.error("Error loading settings:", error);
         return;
     }
 
     if (!data || data.length === 0) {
-        console.log("⚠️ No settings found, creating default...");
+        console.log("Creating default settings...");
         const { data: newData, error: insertError } = await supabase
             .from('store_settings')
             .insert([{
@@ -252,20 +249,10 @@ function AdminDashboard() {
             }])
             .select();
         
-        console.log("Insert response:", { newData, insertError });
-        
-        if (insertError) {
-            console.error("❌ Failed to create default settings:", insertError);
-            toast.error("Failed to create store settings");
-            return;
-        }
-        
         if (newData && newData.length > 0) {
             loadStoreSettings(newData[0]);
-            toast.success("Store settings created!");
         }
     } else {
-        console.log("✅ Settings loaded:", data[0]);
         loadStoreSettings(data[0]);
     }
   };
@@ -429,62 +416,46 @@ function AdminDashboard() {
         toast.error("Please set both opening and closing times!");
         return;
     }
-
-    console.log("💾 Saving daily hours...", { openTime, closeTime, storeSettingsId });
+    const formattedOpen = openTime.length === 5 ? openTime + ':00' : openTime;
+    const formattedClose = closeTime.length === 5 ? closeTime + ':00' : closeTime;
 
     const storeData = {
-        open_time: openTime + ':00',
-        close_time: closeTime + ':00'
+        open_time: formattedOpen,
+        close_time: formattedClose
     };
 
-    console.log("Data to save:", storeData);
-
     try {
+        let error;
+        
         if (storeSettingsId) {
-            console.log("Updating existing settings with ID:", storeSettingsId);
-            const { data, error } = await supabase
+            const { error: updateError } = await supabase
                 .from('store_settings')
                 .update(storeData)
-                .eq('id', storeSettingsId)
-                .select();
-            
-            console.log("Update response:", { data, error });
-            
-            if (error) {
-                console.error("❌ Update error:", error);
-                toast.error(`Update failed: ${error.message}`);
-                return;
-            }
-            
-            toast.success("Daily Hours Updated Successfully! ✅");
-            fetchStoreSettings();
+                .eq('id', storeSettingsId);
+            error = updateError;
         } else {
-            console.log("Creating new settings...");
-            const { data, error } = await supabase
+            const { data: newData, error: insertError } = await supabase
                 .from('store_settings')
-                .insert([{
-                    ...storeData,
-                    is_holiday_active: false
-                }])
+                .insert([{ ...storeData, is_holiday_active: false }])
                 .select();
             
-            console.log("Insert response:", { data, error });
-            
-            if (error) {
-                console.error("❌ Insert error:", error);
-                toast.error(`Failed to save: ${error.message}`);
-                return;
+            if (newData && newData.length > 0) {
+                setStoreSettingsId(newData[0].id);
             }
-            
-            if (data && data.length > 0) {
-                setStoreSettingsId(data[0].id);
-                toast.success("Daily Hours Saved Successfully! ✅");
-                fetchStoreSettings();
-            }
+            error = insertError;
         }
+
+        if (error) {
+            console.error("Save Error:", error);
+            toast.error("Failed to save hours!");
+        } else {
+            toast.success("Shop Hours Updated Successfully! ✅");
+            fetchStoreSettings(); 
+        }
+
     } catch (err) {
-        console.error("❌ Exception:", err);
-        toast.error("An error occurred while saving");
+        console.error("Exception:", err);
+        toast.error("An error occurred");
     }
   };
 
