@@ -1146,28 +1146,44 @@ function AdminDashboard() {
             </thead>
             <tbody>
             {activeOrders.map((order) => (
-                <tr key={order.id} style={{ borderBottom: '1px solid #eee' }}>
+                <tr key={order.id} style={{ borderBottom: '1px solid #eee', backgroundColor: '#ffffff' }}>
                 
-                <td style={{ padding: '12px', verticalAlign: 'top', textAlign: 'left', fontWeight: 'bold' }}>#{order.id}</td>
+                <td style={{ padding: '12px', verticalAlign: 'top', textAlign: 'left', fontWeight: 'bold', color: '#000000' }}>
+                    #{order.id}
+                </td>
 
                 <td style={{ padding: '12px', verticalAlign: 'top', textAlign: 'left' }}>
-                    <div style={{fontWeight: '500'}}>{new Date(order.created_at).toLocaleDateString()}</div>
-                    <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                    <div style={{fontWeight: 'bold', color: '#000000', fontSize: '14px'}}>
+                        {new Date(order.created_at).toLocaleDateString()}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#333333', marginTop: '4px', fontWeight: '500' }}>
                         {new Date(order.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                     </div>
                 </td>
 
                 <td style={{ padding: '12px', verticalAlign: 'top', textAlign: 'left' }}>
-                    <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '15px' }}>{order.customer_name}</div>
-                    <div style={{ color: '#333', fontSize: '13px', marginBottom: '2px' }}>{order.address}</div>
-                    <div style={{ color: 'blue', fontSize: '13px' }}>{order.phone}</div>
+                    <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '15px', color: '#000000' }}>
+                        {order.customer_name}
+                    </div>
+                    
+                    <div style={{ color: '#333333', fontSize: '13px', marginBottom: '2px' }}>
+                        {order.address ? `${order.address}` : ''}
+                    </div>
+                    
+                    <div style={{ color: '#0000EE', fontSize: '13px', fontWeight: '500' }}>
+                        {order.phone ? `${order.phone}` : ''}
+                    </div>
                 </td>
 
                 <td style={{ padding: '12px', verticalAlign: 'top', textAlign: 'left' }}>
-                    <div style={{fontWeight: 'bold', color: '#e67e22', marginBottom: '5px'}}>Rs. {order.total_price}</div>
-                    <div style={{ fontSize: '13px', color: '#444' }}>
+                    <div style={{fontWeight: 'bold', color: '#e67e22', marginBottom: '5px'}}>
+                        Rs. {order.total_price}
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#000000' }}>
                     {order.items && order.items.map((i, idx) => (
-                        <div key={idx} style={{marginBottom: '2px'}}>• {i.name} x {i.quantity}</div>
+                        <div key={idx} style={{marginBottom: '2px', color: '#333333'}}>
+                            • {i.name} x {i.quantity}
+                        </div>
                     ))}
                     </div>
                 </td>
@@ -1176,7 +1192,7 @@ function AdminDashboard() {
                     <select 
                     value={order.status} 
                     onChange={(e) => handleStatusChange(order, e.target.value)}
-                    style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc', backgroundColor: '#fff', color: '#000', width: '100%', fontSize: '14px' }}
+                    style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc', backgroundColor: '#fff', color: '#000', width: '100%', fontSize: '14px', fontWeight: '500' }}
                     >
                     <option value="Pending">Pending</option>
                     <option value="Cooking">Cooking</option>
