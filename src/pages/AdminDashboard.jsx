@@ -152,7 +152,7 @@ function AdminDashboard() {
 
             setOrders((prevOrders) => [payload.new, ...prevOrders]);
             
-            toast.success(`New Order #${payload.new.id} Received! 🔔`, { duration: 4000 });
+            toast.success(`New Order #${payload.new.id} Received!`, { duration: 4000 });
           } 
 
           else if (payload.eventType === 'UPDATE') {
@@ -631,18 +631,9 @@ function AdminDashboard() {
               fetchAllReviews();
           }
       }
-      else if (deleteType === 'ORDER') {
-          ({ error } = await supabase.from('orders').delete().eq('id', deleteId));
-          if (!error) {
-              fetchOrders();
-              toast.success("Order Deleted Successfully!");
-          }
-      }
 
       if (!error) {
-          if (deleteType !== 'ORDER') {
-              toast.success("Deleted Successfully!");
-          }
+          toast.success("Deleted Successfully!");
       } else {
           toast.error("Delete Failed!");
       }
@@ -910,6 +901,21 @@ function AdminDashboard() {
     else toast.error("Update Failed!");
   };
 
+  // Past Orders Delete Function
+  const handleDeleteOrderHistory = async (id) => {
+    if(!window.confirm("Are you sure you want to permanently delete this order record?")) return;
+
+    const { error } = await supabase.from('orders').delete().eq('id', id);
+    if(error) {
+        toast.error("Failed to delete order");
+        console.error("Delete Error", error);
+    } else {
+        toast.success("Order deleted successfully");
+        // Manually update local state to remove item immediately
+        setOrders(prevOrders => prevOrders.filter(order => order.id !== id));
+    }
+  };
+
   const handleLogout = () => { sessionStorage.removeItem('pizzaAdminLogin'); navigate('/'); };
 
   const activeOrders = orders.filter(o => o.status !== 'Completed');
@@ -1157,162 +1163,101 @@ function AdminDashboard() {
       <h2><FaBoxOpen /> Manage Orders</h2>
       <h3 className="section-title"><IoFlashSharp /> Active Orders</h3>
       <div className="table-container mb-40">
-        <table className="admin-table">
+        <table className="admin-table" style={{width: '100%', borderCollapse: 'collapse'}}>
             <thead>
             <tr>
-                <th>Order ID</th>
-                <th>Date & Time</th>
-                <th>Customer</th>
-                <th>Order Details</th>
-                <th>Status</th>
+                <th style={{textAlign: 'left', padding: '12px'}}>ID</th>
+                <th style={{textAlign: 'left', padding: '12px', width: '180px'}}>Date & Time</th>
+                <th style={{textAlign: 'left', padding: '12px', width: '250px'}}>Customer</th>
+                <th style={{textAlign: 'left', padding: '12px'}}>Items & Total</th>
+                <th style={{textAlign: 'left', padding: '12px', width: '150px'}}>Status</th>
             </tr>
             </thead>
             <tbody>
-            {activeOrders.length === 0 ? (
-                <tr><td colSpan="5" style={{textAlign:'center', padding:'20px', color:'#888'}}>No active orders</td></tr>
-            ) : (
-                activeOrders.map((order) => (
+            {activeOrders.map((order) => (
                 <tr key={order.id} style={{ borderBottom: '1px solid #eee' }}>
                 
-                <td style={{ padding: '12px', fontWeight: 'bold', fontSize: '1rem' }}>
-                    #{order.id}
-                </td>
+                <td style={{ padding: '12px', verticalAlign: 'top', textAlign: 'left', fontWeight: 'bold' }}>#{order.id}</td>
 
-                <td style={{ padding: '12px' }}>
-                    <div style={{ fontWeight: '600', color: '#333' }}>
-                        {new Date(order.created_at).toLocaleDateString('en-US', { 
-                            year: 'numeric', 
-                            month: 'short', 
-                            day: 'numeric' 
-                        })}
-                    </div>
+                <td style={{ padding: '12px', verticalAlign: 'top', textAlign: 'left' }}>
+                    <div style={{fontWeight: '500'}}>{new Date(order.created_at).toLocaleDateString()}</div>
                     <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                        {new Date(order.created_at).toLocaleTimeString('en-US', { 
-                            hour: 'numeric', 
-                            minute: '2-digit', 
-                            hour12: true 
-                        })}
+                        {new Date(order.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                     </div>
                 </td>
 
-                <td style={{ padding: '12px' }}>
-                    <div style={{ fontWeight: '600', color: '#333', marginBottom: '6px' }}>
-                        {order.customer_name}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#0066cc', marginBottom: '4px' }}>
-                        📞 {order.customer_phone}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#666', lineHeight: '1.4' }}>
-                        🏠 {order.customer_address}
+                <td style={{ padding: '12px', verticalAlign: 'top', textAlign: 'left' }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '15px' }}>{order.customer_name}</div>
+                    <div style={{ color: '#333', fontSize: '13px', marginBottom: '2px' }}>{order.customer_address}</div>
+                    <div style={{ color: 'blue', fontSize: '13px' }}>{order.customer_phone}</div>
+                </td>
+
+                <td style={{ padding: '12px', verticalAlign: 'top', textAlign: 'left' }}>
+                    <div style={{fontWeight: 'bold', color: '#e67e22', marginBottom: '5px'}}>Rs. {order.total_price}</div>
+                    <div style={{ fontSize: '13px', color: '#444' }}>
+                    {order.items && order.items.map((i, idx) => (
+                        <div key={idx} style={{marginBottom: '2px'}}>• {i.name} x {i.quantity}</div>
+                    ))}
                     </div>
                 </td>
 
-                <td style={{ padding: '12px' }}>
-                    <div style={{ marginBottom: '8px' }}>
-                        {order.items && order.items.map((item, idx) => (
-                            <div key={idx} style={{ fontSize: '13px', color: '#555', marginBottom: '3px' }}>
-                                • {item.name} x{item.quantity}
-                            </div>
-                        ))}
-                    </div>
-                    <div style={{ 
-                        fontWeight: 'bold', 
-                        color: '#ff9f1c', 
-                        fontSize: '15px',
-                        marginTop: '6px',
-                        paddingTop: '6px',
-                        borderTop: '1px solid #eee'
-                    }}>
-                        Total: Rs. {Number(order.total_price).toLocaleString()}
-                    </div>
-                </td>
-
-                <td style={{ padding: '12px' }}>
+                <td style={{ padding: '12px', verticalAlign: 'top', textAlign: 'left' }}>
                     <select 
-                        value={order.status} 
-                        onChange={(e) => handleStatusChange(order, e.target.value)}
-                        style={{ 
-                            padding: '8px 12px', 
-                            borderRadius: '6px', 
-                            border: '2px solid #ddd',
-                            fontSize: '13px',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            background: '#fff',
-                            color: '#333',
-                            minWidth: '130px'
-                        }}
+                    value={order.status} 
+                    onChange={(e) => handleStatusChange(order, e.target.value)}
+                    style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc', backgroundColor: '#fff', color: '#000', width: '100%', fontSize: '14px' }}
                     >
-                        <option value="Pending">⏳ Pending</option>
-                        <option value="Cooking">👨‍🍳 Cooking</option>
-                        <option value="Ready">✅ Ready</option>
-                        <option value="Delivered">🚚 Delivered</option>
-                        <option value="Completed">✔️ Completed</option>
-                        <option value="Cancelled">❌ Cancelled</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Cooking">Cooking</option>
+                    <option value="Ready">Ready</option>
+                    <option value="Delivered">Delivered</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
                     </select>
                 </td>
 
                 </tr>
-            )))}
+            ))}
             </tbody>
         </table>
       </div>
       
       <div className="list-header" style={{marginTop: '40px', borderBottom: 'none'}}>
           <h3 className="section-title"><FaScroll /> Past Orders</h3>
-          <input type="text" placeholder="🔍 Search History..." className="search-input" value={orderSearch} onChange={(e) => setOrderSearch(e.target.value)} />
+          <input type="text" placeholder="Search History..." className="search-input" value={orderSearch} onChange={(e) => setOrderSearch(e.target.value)} />
       </div>
       <div className="table-container">
-        <table className="admin-table">
+        <table className="admin-table" style={{width: '100%', borderCollapse: 'collapse'}}>
             <thead>
                 <tr>
-                    <th>Order ID</th>
-                    <th>Date</th>
-                    <th>Customer</th>
-                    <th>Total</th>
-                    <th>Status</th>
-                    <th>Action</th>
+                    <th style={{textAlign: 'left', padding: '12px'}}>ID</th>
+                    <th style={{textAlign: 'left', padding: '12px'}}>Date</th>
+                    <th style={{textAlign: 'left', padding: '12px'}}>Customer</th>
+                    <th style={{textAlign: 'left', padding: '12px'}}>Total</th>
+                    <th style={{textAlign: 'left', padding: '12px'}}>Status</th>
+                    <th style={{textAlign: 'left', padding: '12px'}}>Action</th>
                 </tr>
             </thead>
             <tbody>
-            {filteredPastOrders.length === 0 ? (
-                <tr><td colSpan="6" style={{textAlign:'center', padding:'20px', color:'#888'}}>No past orders found.</td></tr>
-            ) : (
-                filteredPastOrders.map(order => (
-                <tr key={order.id} className="past-order-row">
-                    <td style={{fontWeight: 'bold'}}>#{order.id}</td>
-                    <td>{new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</td>
-                    <td>
-                        <div>{order.customer_name}</div>
-                        <small style={{color:'#0066cc'}}>{order.customer_phone}</small>
-                    </td>
-                    <td style={{fontWeight: '600', color: '#ff9f1c'}}>Rs. {Number(order.total_price).toLocaleString()}</td>
-                    <td><span className="status-badge completed">✔️ Completed</span></td>
-                    <td>
-                        <button 
-                            className="delete-icon-btn" 
-                            onClick={() => { 
-                                setDeleteId(order.id); 
-                                setDeleteType('ORDER'); 
-                                setShowDeleteModal(true); 
-                            }}
-                            style={{
-                                background: '#dc3545',
-                                color: '#fff',
-                                border: 'none',
-                                padding: '6px 10px',
-                                borderRadius: '5px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '5px'
-                            }}
-                        >
-                            <FaTrashAlt />
-                        </button>
-                    </td>
+            {filteredPastOrders.map(order => (
+                <tr key={order.id} className="past-order-row" style={{borderBottom: '1px solid #eee'}}>
+                <td style={{padding: '12px'}}><strong>#{order.id}</strong></td>
+                <td style={{padding: '12px'}}>{new Date(order.created_at).toLocaleDateString()}</td>
+                <td style={{padding: '12px'}}>{order.customer_name} <br/><span style={{fontSize:'12px', color:'#777'}}>{order.customer_phone}</span></td>
+                <td style={{padding: '12px'}}>Rs. {order.total_price}</td>
+                <td style={{padding: '12px'}}><span className="status-badge completed" style={{padding:'4px 8px', borderRadius:'4px', background:'#e8f5e9', color:'#2e7d32', fontSize:'12px'}}>Completed</span></td>
+                <td style={{padding: '12px'}}>
+                    <button 
+                        onClick={() => handleDeleteOrderHistory(order.id)} 
+                        style={{background:'none', border:'none', cursor:'pointer', color:'#d32f2f', fontSize:'16px'}}
+                        title="Delete permanently"
+                    >
+                        <FaTrash />
+                    </button>
+                </td>
                 </tr>
-            )))}
+            ))}
+            {filteredPastOrders.length === 0 && <tr><td colSpan="6" style={{textAlign:'center', padding:'20px', color:'#888'}}>No past orders found.</td></tr>}
             </tbody>
         </table>
       </div>
