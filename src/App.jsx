@@ -288,7 +288,7 @@ const MainShop = () => {
       setCartItems([...cartItems, newItem]);
     }
     setShowModal(false);
-    toast.success("Added to cart! 🍕");
+    toast.success("Added to cart!");
   };
 
   const [custName, setCustName] = useState('');
