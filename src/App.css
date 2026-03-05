@@ -3548,3 +3548,60 @@ select.admin-input {
     height: 250px !important; 
     border-radius: 0 !important;
 }
+
+@media screen and (max-width: 768px) {
+  
+  .promo-content {
+    text-align: left !important;
+    align-items: flex-start !important;
+    padding-left: 10px !important; 
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+  }
+
+  .promo-heading-main {
+    font-size: 1.3rem !important; 
+    margin: 0 0 5px 0 !important;
+    padding: 0 !important;
+    line-height: 1.1 !important;
+  }
+
+  .promo-sub-text {
+    font-size: 0.8rem !important;
+    margin: 0 0 8px 0 !important;
+    padding: 0 !important;
+  }
+
+  .promo-code-badge {
+    margin-left: 0 !important; 
+    font-size: 0.7rem !important;
+    padding: 3px 6px !important;
+  }
+
+  .navbar, .nav-container, header {
+    overflow: visible !important; 
+    z-index: 99999 !important;
+  }
+
+  .search-results-container, 
+  .suggestions-list, 
+  .search-dropdown,
+  [class*="search-results"], 
+  [class*="suggestions"] {
+    position: absolute !important;
+    top: 60px !important; 
+    left: 5% !important;
+    width: 90% !important;
+    background: #333 !important;
+    z-index: 999999 !important; 
+    display: block !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3) !important;
+    border-radius: 8px !important;
+  }
+
+  .promo-slider-container {
+    z-index: 1 !important;
+    position: relative !important;
+  }
+}
