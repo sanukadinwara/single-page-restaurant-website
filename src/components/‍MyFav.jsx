@@ -39,7 +39,7 @@ function Favorites({ favorites = [], menuItems = [], closeFavorites, toggleFavor
                 <div style={{flex: 1, marginLeft: '15px', textAlign: 'left'}}>
                   <h4 style={{margin:0}}>{item.name}</h4>
                   <span style={{color:'#ff9f1c', fontWeight:'bold'}}>
-                    Rs. {item.variants?.[0]?.price || item.price || 0}
+                    Rs. {Number(item.variants?.[0]?.price || item.price || 0).toFixed(2)}
                   </span>
                 </div>
 

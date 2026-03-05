@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import emailjs from '@emailjs/browser';
 
 import { IoBarChartSharp, IoStatsChart, IoLogOut, IoFlashSharp, IoTime } from "react-icons/io5"; 
-import { FaBoxOpen, FaPizzaSlice, FaScroll, FaPlusSquare, FaClipboardList, FaCloudUploadAlt, FaCalendarAlt, FaImages, FaBars, FaTimes, FaFileDownload, FaEdit, FaTrashAlt, FaPlusCircle, FaComments, FaStar } from "react-icons/fa";
+import { FaBoxOpen, FaPizzaSlice, FaScroll, FaPlusSquare, FaClipboardList, FaCloudUploadAlt, FaCalendarAlt, FaImages, FaBars, FaTimes, FaFileDownload, FaEdit, FaTrashAlt, FaPlusCircle, FaComments, FaStar, FaWhatsapp } from "react-icons/fa";
 import { MdOutlineMenuBook, MdWavingHand, MdStorefront } from "react-icons/md";
 import { FaPencil, FaTrash } from "react-icons/fa6";
 
@@ -16,13 +16,17 @@ import {
 import { Bar, Pie } from 'react-chartjs-2';
 
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
+
+const notificationSound = new Audio('/notification.mp3');
+notificationSound.preload = 'auto';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
 function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const adminRole = sessionStorage.getItem('adminRole');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
@@ -100,7 +104,7 @@ function AdminDashboard() {
     const file = e.target.files[0];
     if (!file) return;
 
-    const loadingToast = toast.loading("Uploading Image... 📤");
+    const loadingToast = toast.loading("Uploading Image...");
 
     const url = await uploadToCloudinary(file);
     
@@ -112,7 +116,7 @@ function AdminDashboard() {
         } else if (type === 'PROMO') {
             setPromoImage(url);
         }
-        toast.success("Image Uploaded! ✅");
+        toast.success("Image Uploaded!");
     }
   };
 
@@ -147,8 +151,8 @@ function AdminDashboard() {
           if (payload.eventType === 'INSERT') {
             console.log('New Order Received:', payload.new);
             
-            const audio = new Audio('/notification.mp3');
-            audio.play().catch(e => console.log("Audio error:", e));
+            notificationSound.currentTime = 0; 
+            notificationSound.play().catch(err => console.log("Audio play blocked by browser:", err));
 
             setOrders((prevOrders) => [payload.new, ...prevOrders]);
             
@@ -229,9 +233,11 @@ function AdminDashboard() {
   };
 
   const fetchStoreSettings = async () => {
-    console.log("🔍 Fetching store settings...");
-    
-    let { data, error } = await supabase.from('store_settings').select('*');
+    let { data, error } = await supabase
+        .from('store_settings')
+        .select('*')
+        .order('id', { ascending: false })
+        .limit(1);
 
     if (error) {
         console.error("Error loading settings:", error);
@@ -239,14 +245,9 @@ function AdminDashboard() {
     }
 
     if (!data || data.length === 0) {
-        console.log("Creating default settings...");
         const { data: newData, error: insertError } = await supabase
             .from('store_settings')
-            .insert([{
-                open_time: '08:00:00',
-                close_time: '22:00:00',
-                is_holiday_active: false
-            }])
+            .insert([{ open_time: '08:00:00', close_time: '22:00:00', is_holiday_active: false }])
             .select();
         
         if (newData && newData.length > 0) {
@@ -263,6 +264,7 @@ function AdminDashboard() {
 
       const fullMessage = `${mainMessage}\n\nFor more information, visit https://pizzapalacelk.vercel.app/.`;
 
+      /*
       subs.forEach(sub => {
           const templateParams = {
               to_email: sub.email,
@@ -279,7 +281,11 @@ function AdminDashboard() {
               .then(() => console.log(`Email sent to ${sub.email}`))
               .catch((err) => console.error("Email failed", err));
       });
-      toast.success("Newsletter Sent to Subscribers! 📨");
+      */
+      setTimeout(() => {
+          console.log(`[Demo Mode] Bulk email "${subject}" would have been sent to ${subs.length} subscribers.`);
+          toast.success("Newsletter Sent to Subscribers! (Demo Mode)");
+      }, 1000);
   };
 
   const loadStoreSettings = (settings) => {
@@ -386,6 +392,10 @@ function AdminDashboard() {
   };
 
   const saveBannerToDB = async () => {
+    if (adminRole === 'demo') {
+        toast.error("Settings cannot be changed in Demo Mode!");
+        return;
+    }
     const bannerData = {
         heading: promoHeading,
         sub_heading: promoSub,
@@ -412,47 +422,43 @@ function AdminDashboard() {
   };
 
   const saveDailyHours = async () => {
+    if (adminRole === 'demo') {
+        toast.error("Settings cannot be changed in Demo Mode!");
+        return;
+    }
     if (!openTime || !closeTime) {
         toast.error("Please set both opening and closing times!");
         return;
     }
+    
     const formattedOpen = openTime.length === 5 ? openTime + ':00' : openTime;
     const formattedClose = closeTime.length === 5 ? closeTime + ':00' : closeTime;
 
-    const storeData = {
-        open_time: formattedOpen,
-        close_time: formattedClose
-    };
-
     try {
-        let error;
-        
         if (storeSettingsId) {
-            const { error: updateError } = await supabase
+            const { error } = await supabase
                 .from('store_settings')
-                .update(storeData)
+                .update({ open_time: formattedOpen, close_time: formattedClose })
                 .eq('id', storeSettingsId);
-            error = updateError;
-        } else {
-            const { data: newData, error: insertError } = await supabase
-                .from('store_settings')
-                .insert([{ ...storeData, is_holiday_active: false }])
-                .select();
-            
-            if (newData && newData.length > 0) {
-                setStoreSettingsId(newData[0].id);
+                
+            if (!error) {
+                toast.success("Shop Hours updated successfully!");
+                fetchStoreSettings(); 
+            } else {
+                toast.error("Failed to update hours!");
             }
-            error = insertError;
-        }
-
-        if (error) {
-            console.error("Save Error:", error);
-            toast.error("Failed to save hours!");
         } else {
-            toast.success("Shop Hours Updated Successfully! ✅");
-            fetchStoreSettings(); 
+            const { data, error } = await supabase
+                .from('store_settings')
+                .insert([{ open_time: formattedOpen, close_time: formattedClose, is_holiday_active: false }])
+                .select();
+                
+            if (!error && data) {
+                setStoreSettingsId(data[0].id);
+                toast.success("Shop Hours saved successfully!");
+                fetchStoreSettings();
+            }
         }
-
     } catch (err) {
         console.error("Exception:", err);
         toast.error("An error occurred");
@@ -460,6 +466,10 @@ function AdminDashboard() {
   };
 
   const setHolidayMode = async () => {
+    if (adminRole === 'demo') {
+        toast.error("Settings cannot be changed in Demo Mode!");
+        return;
+    }
     if (!holidayStart || !holidayEnd) {
         toast.error("Please select both start and end date/time!");
         return;
@@ -535,7 +545,7 @@ function AdminDashboard() {
     const startStr = new Date(holidayStart).toLocaleDateString();
         const endStr = new Date(holidayEnd).toLocaleDateString();
         sendBulkEmail(
-            "Shop Closing Notice 🔒", 
+            "Shop Closing Notice!", 
             `Due to an emergency, our establishment will be closed from ${startStr} to ${endStr}. We apologize for the inconvenience.`
         );
         
@@ -543,6 +553,10 @@ function AdminDashboard() {
   };
 
   const clearHolidayMode = async () => {
+    if (adminRole === 'demo') {
+        toast.error("Settings cannot be changed in Demo Mode!");
+        return;
+    }
     if (!storeSettingsId) {
         toast.error("No settings found!");
         return;
@@ -572,7 +586,7 @@ function AdminDashboard() {
         setIsHolidayActive(false);
         setHolidayStart('');
         setHolidayEnd('');
-        toast.success("Holiday Mode Deactivated! Shop is Open ✅");
+        toast.success("Holiday Mode Deactivated! Shop is Open");
         fetchStoreSettings();
     } catch (err) {
         console.error("❌ Exception:", err);
@@ -581,6 +595,11 @@ function AdminDashboard() {
   };
 
   const confirmDelete = async () => {
+    if (adminRole === 'demo') {
+        toast.error("Deleting items is disabled in Demo Mode!");
+        setShowDeleteModal(false);
+        return;
+    }
       let error = null;
       
       if (deleteType === 'BANNER') {
@@ -600,6 +619,12 @@ function AdminDashboard() {
           ({ error } = await supabase.from('reviews').delete().eq('id', deleteId));
           if (!error) {
               fetchAllReviews();
+          }
+      }
+      else if (deleteType === 'ORDER') {
+          ({ error } = await supabase.from('orders').delete().eq('id', deleteId));
+          if (!error) {
+              setOrders(prevOrders => prevOrders.filter(order => order.id !== deleteId));
           }
       }
 
@@ -770,48 +795,128 @@ function AdminDashboard() {
   };
 
   const generatePDF = () => {
-    const doc = new jsPDF();
-    const dateStr = new Date().toLocaleDateString();
-    doc.setFontSize(18);
-    doc.text(`Pizza Shop - Sales Report (${salesView})`, 14, 22);
-    doc.setFontSize(11);
-    doc.text(`Generated on: ${dateStr}`, 14, 30);
-
-    const salesData = getFilteredOrders(salesView);
-    const totalRevenue = salesData.reduce((acc, o) => acc + (Number(o.total_price) || 0), 0);
-    
-    doc.autoTable({
-        startY: 40,
-        head: [['Metric', 'Value']],
-        body: [
-            ['Report Period', salesView],
-            ['Total Orders', salesData.length],
-            ['Total Revenue', `Rs. ${totalRevenue.toLocaleString()}`],
-            ['Active Customers', new Set(salesData.map(o => o.customer_phone)).size]
-        ],
-        theme: 'grid',
-        headStyles: { fillColor: [255, 159, 28] } 
-    });
-
-    let itemCounts = {};
-    salesData.forEach(order => {
-        if (order.items) {
-            order.items.forEach(item => {
-                itemCounts[item.name] = (itemCounts[item.name] || 0) + Number(item.quantity);
-            });
+    try {
+        const loadingToast = toast.loading("Generating Comprehensive Report...");
+        const doc = new jsPDF();
+        const dateStr = new Date().toLocaleDateString();
+        
+        const completedOrders = orders.filter(o => o.status === 'Completed');
+        
+        if (completedOrders.length === 0) {
+            toast.dismiss(loadingToast);
+            toast.error("No completed orders to generate a report!");
+            return;
         }
-    });
-    const topItems = Object.entries(itemCounts).sort((a, b) => b[1] - a[1]);
 
-    doc.text("Items Sold Summary", 14, doc.lastAutoTable.finalY + 15);
-    doc.autoTable({
-        startY: doc.lastAutoTable.finalY + 20,
-        head: [['Item Name', 'Quantity Sold']],
-        body: topItems,
-        theme: 'striped'
-    });
-    doc.save(`Report_${salesView}.pdf`);
-    toast.success("Report Downloaded!");
+        doc.setFontSize(20);
+        doc.setTextColor(230, 126, 34); 
+        doc.text(`Pizza Palace - Comprehensive Business Analytics`, 14, 22);
+        
+        doc.setFontSize(11);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Report Generated on: ${dateStr}`, 14, 30);
+        doc.text(`Total All-Time Completed Orders: ${completedOrders.length}`, 14, 36);
+
+        const totalRevenue = completedOrders.reduce((acc, o) => acc + (Number(o.total_price) || 0), 0);
+        doc.setFontSize(13);
+        doc.setTextColor(46, 204, 113);
+        doc.text(`Total All-Time Revenue: Rs. ${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 14, 44);
+
+        let currentY = 55;
+
+        const customerMap = {};
+        completedOrders.forEach(o => {
+            const phone = o.phone || o.customer_phone || "Unknown";
+            const name = o.customer_name || "Unknown";
+            if (!customerMap[phone]) {
+                customerMap[phone] = { name, count: 0, spent: 0 };
+            }
+            customerMap[phone].count += 1;
+            customerMap[phone].spent += (Number(o.total_price) || 0);
+        });
+        
+        const topCustomers = Object.entries(customerMap)
+            .map(([phone, data]) => [data.name, phone, data.count, `Rs. ${data.spent.toLocaleString()}`])
+            .sort((a, b) => b[2] - a[2]) 
+            .slice(0, 5); 
+
+        doc.setFontSize(14);
+        doc.setTextColor(0, 0, 0);
+        doc.text("1. Top 5 Best Customers (Most Orders)", 14, currentY);
+        
+        autoTable(doc, {
+            startY: currentY + 5,
+            head: [['Customer Name', 'Phone Number', 'Total Orders', 'Total Spent']],
+            body: topCustomers,
+            theme: 'grid',
+            headStyles: { fillColor: [41, 128, 185] } 
+        });
+        currentY = doc.lastAutoTable.finalY + 15;
+
+        const itemMap = {};
+        completedOrders.forEach(o => {
+            if (o.items && Array.isArray(o.items)) {
+                o.items.forEach(item => {
+                    const name = item.name;
+                    itemMap[name] = (itemMap[name] || 0) + Number(item.quantity);
+                });
+            }
+        });
+
+        const topItems = Object.entries(itemMap)
+            .map(([name, qty]) => [name, qty])
+            .sort((a, b) => b[1] - a[1]) 
+            .slice(0, 10); 
+
+        doc.setFontSize(14);
+        doc.text("2. Best Selling Menu Items (All-Time)", 14, currentY);
+        
+        autoTable(doc, {
+            startY: currentY + 5,
+            head: [['Item Name', 'Total Quantity Sold']],
+            body: topItems,
+            theme: 'grid',
+            headStyles: { fillColor: [39, 174, 96] } 
+        });
+        currentY = doc.lastAutoTable.finalY + 15;
+
+        if (currentY > 230) {
+            doc.addPage();
+            currentY = 20;
+        }
+
+        const monthMap = {};
+        completedOrders.forEach(o => {
+            const monthStr = new Date(o.created_at).toLocaleString('default', { month: 'long', year: 'numeric' });
+            monthMap[monthStr] = (monthMap[monthStr] || 0) + 1;
+        });
+
+        const peakMonths = Object.entries(monthMap)
+            .map(([month, count]) => [month, count])
+            .sort((a, b) => b[1] - a[1]) 
+            .slice(0, 5);
+
+        doc.setFontSize(14);
+        doc.text("3. Peak Sales Months (Highest Order Volumes)", 14, currentY);
+        
+        autoTable(doc, {
+            startY: currentY + 5,
+            head: [['Month & Year', 'Number of Orders']],
+            body: peakMonths,
+            theme: 'grid',
+            headStyles: { fillColor: [142, 68, 173] } 
+        });
+
+        doc.save('PizzaPalace_Business_Report.pdf');
+        
+        toast.dismiss(loadingToast);
+        toast.success("Professional Report Downloaded!");
+
+    } catch (error) {
+        console.error("PDF Generation Error: ", error);
+        toast.dismiss();
+        toast.error("Failed to generate PDF. Check console for details.");
+    }
   };
 
   const resetForm = () => { setItemName(''); setCategory('Pizza'); setDesc(''); setImage(''); setVariants([{ name: '', price: '' }]); setIsEditing(false); setCurrentId(null); };
@@ -820,6 +925,10 @@ function AdminDashboard() {
   const removeVariant = (index) => { const newVariants = variants.filter((_, i) => i !== index); setVariants(newVariants); };
 
   const handleSave = async () => {
+    if (adminRole === 'demo') {
+        toast.error("Menu cannot be modified in Demo Mode!");
+        return;
+    }
     if (!itemName) return toast.error("Item Name is required!");
     if (!image) return toast.error("Please enter Image URL!");
     const newItemData = { name: itemName, category, description: desc, image_url: image, variants };
@@ -872,19 +981,37 @@ function AdminDashboard() {
     else toast.error("Update Failed!");
   };
 
-  // Past Orders Delete Function
-  const handleDeleteOrderHistory = async (id) => {
-    if(!window.confirm("Are you sure you want to permanently delete this order record?")) return;
-
-    const { error } = await supabase.from('orders').delete().eq('id', id);
-    if(error) {
-        toast.error("Failed to delete order");
-        console.error("Delete Error", error);
-    } else {
-        toast.success("Order deleted successfully");
-        // Manually update local state to remove item immediately
-        setOrders(prevOrders => prevOrders.filter(order => order.id !== id));
+  const handleDeleteOrderHistory = (id) => {
+    if (adminRole === 'demo') {
+        toast.error("Deleting orders is disabled in Demo Mode!");
+        return;
     }
+    
+    setDeleteId(id);
+    setDeleteType('ORDER'); 
+    setShowDeleteModal(true);
+  };
+
+  const notifyCustomer = (order) => {
+    let phone = order.phone || order.customer_phone; 
+    
+    if (!phone) {
+        toast.error("No phone number found!");
+        return;
+    }
+
+    if (phone.startsWith('0')) {
+        phone = '94' + phone.substring(1); 
+    } else if (!phone.startsWith('94') && !phone.startsWith('+94')) {
+        phone = '94' + phone; 
+    }
+    
+    phone = phone.replace('+', '');
+
+    const message = `Hi ${order.customer_name},\n\nYour order #${order.id} is now *${order.status}*! 🍕\n\nThank you for ordering with us.`;
+
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank");
   };
 
   const handleLogout = () => { sessionStorage.removeItem('pizzaAdminLogin'); navigate('/'); };
@@ -894,7 +1021,7 @@ function AdminDashboard() {
   const filteredPastOrders = pastOrders.filter(order => {
       const search = orderSearch.toLowerCase();
       const name = order.customer_name || "";
-      const phone = order.customer_phone || "";
+      const phone = order.phone || order.customer_phone || ""; 
       return (name.toLowerCase().includes(search) || phone.includes(search) || order.id.toString().includes(search));
   });
 
@@ -1142,6 +1269,7 @@ function AdminDashboard() {
                 <th style={{textAlign: 'left', padding: '12px', width: '250px'}}>Customer</th>
                 <th style={{textAlign: 'left', padding: '12px'}}>Items & Total</th>
                 <th style={{textAlign: 'left', padding: '12px', width: '150px'}}>Status</th>
+                <th style={{textAlign: 'left', padding: '12px', width: '80px'}}>Action</th>
             </tr>
             </thead>
             <tbody>
@@ -1153,7 +1281,7 @@ function AdminDashboard() {
                 </td>
 
                 <td style={{ padding: '12px', verticalAlign: 'top', textAlign: 'left' }}>
-                    <div style={{fontWeight: 'bold', color: '#000000', fontSize: '14px'}}>
+                    <div style={{fontWeight: '600', color: '#000000', fontSize: '14px'}}>
                         {new Date(order.created_at).toLocaleDateString()}
                     </div>
                     <div style={{ fontSize: '12px', color: '#333333', marginTop: '4px', fontWeight: '500' }}>
@@ -1177,7 +1305,7 @@ function AdminDashboard() {
 
                 <td style={{ padding: '12px', verticalAlign: 'top', textAlign: 'left' }}>
                     <div style={{fontWeight: 'bold', color: '#e67e22', marginBottom: '5px'}}>
-                        Rs. {order.total_price}
+                        Rs. {Number(order.total_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                     <div style={{ fontSize: '13px', color: '#000000' }}>
                     {order.items && order.items.map((i, idx) => (
@@ -1192,7 +1320,7 @@ function AdminDashboard() {
                     <select 
                     value={order.status} 
                     onChange={(e) => handleStatusChange(order, e.target.value)}
-                    style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc', backgroundColor: '#fff', color: '#000', width: '100%', fontSize: '14px', fontWeight: '500' }}
+                    style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc', backgroundColor: '#fff', color: '#000', width: '100%', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}
                     >
                     <option value="Pending">Pending</option>
                     <option value="Cooking">Cooking</option>
@@ -1201,6 +1329,28 @@ function AdminDashboard() {
                     <option value="Completed">Completed</option>
                     <option value="Cancelled">Cancelled</option>
                     </select>
+
+                    <button 
+                        onClick={() => notifyCustomer(order)}
+                        style={{
+                            width: '100%', padding: '8px', backgroundColor: '#25D366', color: 'white', 
+                            border: 'none', borderRadius: '5px', cursor: 'pointer', display: 'flex', 
+                            alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 'bold'
+                        }}
+                    >
+                        <FaWhatsapp size={16} /> Notify
+                    </button>
+                </td>
+
+                <td style={{ padding: '12px', verticalAlign: 'top', textAlign: 'center' }}>
+                    <button 
+                        className="delete-icon-btn" 
+                        onClick={() => handleDeleteOrderHistory(order.id)}
+                        title="Delete Order"
+                        style={{marginTop: '5px'}}
+                    >
+                        <FaTrashAlt />
+                    </button>
                 </td>
 
                 </tr>
@@ -1211,7 +1361,14 @@ function AdminDashboard() {
       
       <div className="list-header" style={{marginTop: '40px', borderBottom: 'none'}}>
           <h3 className="section-title"><FaScroll /> Past Orders</h3>
-          <input type="text" placeholder="Search History..." className="search-input" value={orderSearch} onChange={(e) => setOrderSearch(e.target.value)} />
+          <input 
+                type="text" 
+                placeholder="Search History..." 
+                className="search-input" 
+                value={orderSearch} 
+                onChange={(e) => setOrderSearch(e.target.value)} 
+                style={{color: '#333', backgroundColor: '#fff'}} 
+          />
       </div>
       <div className="table-container">
         <table className="admin-table" style={{width: '100%', borderCollapse: 'collapse'}}>
@@ -1220,6 +1377,7 @@ function AdminDashboard() {
                     <th style={{textAlign: 'left', padding: '12px'}}>ID</th>
                     <th style={{textAlign: 'left', padding: '12px'}}>Date</th>
                     <th style={{textAlign: 'left', padding: '12px'}}>Customer</th>
+                    <th style={{textAlign: 'left', padding: '12px'}}>Items</th>
                     <th style={{textAlign: 'left', padding: '12px'}}>Total</th>
                     <th style={{textAlign: 'left', padding: '12px'}}>Status</th>
                     <th style={{textAlign: 'left', padding: '12px'}}>Action</th>
@@ -1230,8 +1388,22 @@ function AdminDashboard() {
                 <tr key={order.id} className="past-order-row" style={{borderBottom: '1px solid #eee'}}>
                 <td style={{padding: '12px'}}><strong>#{order.id}</strong></td>
                 <td style={{padding: '12px'}}>{new Date(order.created_at).toLocaleDateString()}</td>
-                <td style={{padding: '12px'}}>{order.customer_name} <br/><span style={{fontSize:'12px', color:'#777'}}>{order.customer_phone}</span></td>
-                <td style={{padding: '12px'}}>Rs. {order.total_price}</td>
+                
+                <td style={{padding: '12px'}}>
+                    <strong>{order.customer_name}</strong><br/>
+                    <small style={{color:'#666'}}>{order.address}</small><br/>
+                    <small style={{color:'blue', fontWeight:'bold'}}> {order.phone || order.customer_phone}</small>
+                </td>
+
+                <td style={{padding: '12px'}}>
+                    <ul style={{margin: 0, paddingLeft: '15px', fontSize: '0.85rem', color: '#333'}}>
+                        {order.items && order.items.map((item, i) => (
+                            <li key={i} style={{marginBottom:'2px'}}>{item.name} x {item.quantity}</li>
+                        ))}
+                    </ul>
+                </td>
+
+                <td style={{padding: '12px', fontWeight:'bold', color:'#e67e22'}}>Rs. {Number(order.total_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 <td style={{padding: '12px'}}><span className="status-badge completed" style={{padding:'4px 8px', borderRadius:'4px', background:'#e8f5e9', color:'#2e7d32', fontSize:'12px'}}>Completed</span></td>
                 <td style={{padding: '12px'}}>
                     <button 
@@ -1244,7 +1416,7 @@ function AdminDashboard() {
                 </td>
                 </tr>
             ))}
-            {filteredPastOrders.length === 0 && <tr><td colSpan="6" style={{textAlign:'center', padding:'20px', color:'#888'}}>No past orders found.</td></tr>}
+            {filteredPastOrders.length === 0 && <tr><td colSpan="7" style={{textAlign:'center', padding:'20px', color:'#888'}}>No past orders found.</td></tr>}
             </tbody>
         </table>
       </div>
@@ -1261,7 +1433,23 @@ function AdminDashboard() {
             </h3>
             <div className="form-group"><label>Item Name</label><input type="text" placeholder="Item Name" className="admin-input" value={itemName} onChange={(e) => setItemName(e.target.value)} /></div>
             <div className="form-row">
-                <div className="form-group"><label>Category</label><select className="admin-input" value={category} onChange={(e) => setCategory(e.target.value)}><option value="Pizza">Pizza</option><option value="Side Items">Side Items</option><option value="Beverages">Beverages</option><option value="Desserts">Desserts</option><option value="Combo Ideas">Combo Ideas</option></select></div>
+                <div className="form-group">
+                    <label>Category</label>
+                    <input 
+                        list="category-list" 
+                        className="admin-input" 
+                        value={category} 
+                        onChange={(e) => setCategory(e.target.value)} 
+                        placeholder="Type new or select..."
+                    />
+                    <datalist id="category-list">
+                        <option value="Pizza" />
+                        <option value="Side Items" />
+                        <option value="Beverages" />
+                        <option value="Desserts" />
+                        <option value="Combo Ideas" />
+                    </datalist>
+                </div>
             </div>
             <div className="form-group">
                 <label>Image URL</label>
@@ -1319,9 +1507,15 @@ function AdminDashboard() {
                 <tbody>
                     {reviewsList.length === 0 && <tr><td colSpan="5" style={{textAlign:'center', padding:'20px'}}>No reviews yet.</td></tr>}
                     {reviewsList.map(rev => (
-                        <tr key={rev.id}>
-                            <td>{new Date(rev.created_at).toLocaleDateString()}</td>
-                            <td>{rev.name}<br/><small style={{color:'#777'}}>{rev.email}</small></td>
+                        <tr key={rev.id} style={{color: '#333'}}> 
+                            
+                            <td style={{fontWeight: '500'}}>{new Date(rev.created_at).toLocaleDateString()}</td>
+                            
+                            <td>
+                                <strong>{rev.name}</strong><br/>
+                                <small style={{color:'#777'}}>{rev.email}</small>
+                            </td>
+                            
                             <td>
                                 <div style={{display:'flex'}}>
                                     {[...Array(5)].map((_, i) => (
@@ -1329,12 +1523,22 @@ function AdminDashboard() {
                                     ))}
                                 </div>
                             </td>
+                            
                             <td style={{maxWidth:'300px'}}>{rev.message}</td>
+                            
                             <td>
-                                <button className="delete-icon-btn" onClick={() => { setDeleteId(rev.id); setDeleteType('REVIEW'); setShowDeleteModal(true); }}>
+                                <button 
+                                    className="delete-icon-btn" 
+                                    onClick={() => { 
+                                        setDeleteId(rev.id); 
+                                        setDeleteType('REVIEW'); 
+                                        setShowDeleteModal(true); 
+                                    }}
+                                >
                                     <FaTrashAlt />
                                 </button>
                             </td>
+                            
                         </tr>
                     ))}
                 </tbody>
@@ -1344,30 +1548,67 @@ function AdminDashboard() {
   );
 
   const handleSavePromo = async () => {
+    if (adminRole === 'demo') {
+        toast.error("Settings cannot be changed in Demo Mode!");
+        return;
+    }
     if (!promoCode || !discountValue || !startDate || !endDate) {
         toast.error("Please fill all promo details!");
         return;
     }
 
     setIsPromoLoading(true);
+    const codeUpper = promoCode.toUpperCase();
 
-    const { error } = await supabase
-        .from('promo_codes')
-        .insert([{
-            code: promoCode.toUpperCase(), 
+    try {
+        const { data: existingCode } = await supabase
+            .from('promo_codes')
+            .select('id')
+            .eq('code', codeUpper)
+            .maybeSingle(); 
+
+        let dbError = null;
+
+        const promoData = {
+            code: codeUpper,
             discount_type: discountType,
             value: parseFloat(discountValue),
             start_date: startDate,
             end_date: endDate
-        }]);
+        };
 
-    if (error) {
-        console.error(error);
-        toast.error("Failed to add Promo Code!");
-    } else {
-        toast.success("Promo Rules Saved!");
-        setShowPromoModal(false);
+        console.log("📤 Data sending to Supabase:", promoData);
+
+        if (existingCode) {
+            const { error } = await supabase
+                .from('promo_codes')
+                .update({
+                    discount_type: discountType,
+                    value: parseFloat(discountValue),
+                    start_date: startDate,
+                    end_date: endDate
+                })
+                .eq('id', existingCode.id);
+            dbError = error;
+        } else {
+            const { error } = await supabase
+                .from('promo_codes')
+                .insert([promoData]);
+            dbError = error;
+        }
+
+        if (dbError) {
+            console.error("❌ Database Error details:", dbError);
+            toast.error(`Error: ${dbError.message || "Failed to save"}`);
+        } else {
+            toast.success("Promo Rules Saved Successfully!");
+            setShowPromoModal(false);
+        }
+    } catch (err) {
+        console.error("Exception:", err);
+        toast.error("An unexpected error occurred!");
     }
+
     setIsPromoLoading(false);
   };
 

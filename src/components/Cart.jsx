@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { FaTimes, FaTrash, FaWhatsapp, FaUser, FaMapMarkerAlt, FaPhone } from 'react-icons/fa';
+import { FaTimes, FaTrash, FaWhatsapp, FaUser, FaMapMarkerAlt, FaPhone, FaEnvelope } from 'react-icons/fa';
+import emailjs from '@emailjs/browser';
 import '../App.css'; 
 import toast from 'react-hot-toast';
 
@@ -15,42 +16,80 @@ const Cart = ({ cartItems, onClose, removeFromCart, cart, isShopOpen }) => {
   const [customerDetails, setCustomerDetails] = useState({
       name: '',
       address: '',
-      phone: ''
+      phone: '',
+      email: ''
   });
+
+  const [promoInput, setPromoInput] = useState(''); 
+  const [appliedPromo, setAppliedPromo] = useState(null); 
+  const [discountAmount, setDiscountAmount] = useState(0); 
 
   const finalCart = cart || cartItems || [];
 
   const subTotal = finalCart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const grandTotal = subTotal - discount;
 
-  const applyPromo = async () => {
-    const today = new Date().toISOString().split('T')[0];
-    if(!promoCode) return;
+  const applyPromoCode = async () => {
+    if (!promoInput) return;
 
-    const { data, error } = await supabase
-      .from('promo_codes')
-      .select('*')
-      .eq('code', promoCode)
-      .single();
+    const loadingToast = toast.loading("Checking code...");
 
-    if (error || !data) {
-      setPromoStatus('invalid');
-      setDiscount(0);
-      return;
+    try {
+        const { data, error } = await supabase
+            .from('promo_codes')
+            .select('*')
+            .eq('code', promoInput.toUpperCase())
+            .maybeSingle();
+
+        toast.dismiss(loadingToast);
+
+        if (error || !data) {
+            toast.error("Invalid Promo Code!");
+            return;
+        }
+
+        const now = new Date();
+        const start = new Date(data.start_date);
+        const end = new Date(data.end_date);
+
+        if (now < start || now > end) {
+            toast.error("This code has expired!");
+            return;
+        }
+
+        let discountableAmount = 0;
+        const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
+        if (data.apply_to === 'All' || !data.apply_to) {
+            discountableAmount = subtotal;
+        } else {
+            discountableAmount = cart
+                .filter(item => item.category === data.apply_to)
+                .reduce((acc, item) => acc + (item.price * item.quantity), 0);
+            
+            if (discountableAmount === 0) {
+                toast.error(`This code is only valid for ${data.apply_to} items!`);
+                return;
+            }
+        }
+
+        let discount = 0;
+        if (data.discount_type === 'percentage') {
+            discount = (discountableAmount * data.value) / 100;
+        } else {
+            discount = Math.min(data.value, discountableAmount);
+        }
+
+        setDiscountAmount(discount);
+        setAppliedPromo(data);
+        toast.success(`Coupon Applied! You saved Rs. ${discount.toLocaleString()}`);
+
+    } catch (err) {
+        toast.dismiss(loadingToast);
+        toast.error("Something went wrong!");
+        console.error(err);
     }
-
-    if (today < data.start_date || today > data.end_date) {
-      setPromoStatus('expired');
-      setDiscount(0);
-    } else {
-      setPromoStatus('valid');
-      if (data.discount_type === 'percentage') {
-        setDiscount((subTotal * data.value) / 100); 
-      } else {
-        setDiscount(data.value); 
-      }
-    }
-  };
+};
 
   const handleProceedToCheckout = () => {
       if (!isShopOpen) {
@@ -61,8 +100,8 @@ const Cart = ({ cartItems, onClose, removeFromCart, cart, isShopOpen }) => {
   };
 
   const handleWhatsAppOrder = async () => {
-    if (!customerDetails.name || !customerDetails.address || !customerDetails.phone) {
-        alert("Please fill in all details (Name, Address, Phone)!");
+    if (!customerDetails.name || !customerDetails.address || !customerDetails.phone || !customerDetails.email) {
+        alert("Please fill in all details!");
         return;
     }
 
@@ -78,16 +117,43 @@ const Cart = ({ cartItems, onClose, removeFromCart, cart, isShopOpen }) => {
             total_price: grandTotal,
             discount: discount,
             status: 'Pending'
-        }]);
+        }])
+        .select();
 
-    if (error) {
+    if (error || !data) {
         console.error('Error saving order:', error);
         alert("Something went wrong! Please try again.");
         setIsSaving(false);
         return; 
     }
 
-    const phoneNumber = "94710993625"; 
+    const insertedOrder = data[0];
+    const savedOrderIds = JSON.parse(localStorage.getItem('my_orders')) || [];
+    savedOrderIds.push(insertedOrder.id);
+    localStorage.setItem('my_orders', JSON.stringify(savedOrderIds));
+
+    const templateParams = {
+        to_email: customerDetails.email,
+        subject: `Your Order #${insertedOrder.id} is Confirmed! 🍕`,
+        message: `Hi ${customerDetails.name},\n\nThank you for ordering from Pizza Palace!\n\nYour order total is Rs. ${grandTotal.toFixed(2)}.\n\nYou can check your order status anytime from the 'My Orders' section on our website.\n\nEnjoy your meal!\n\nBest Regards,\nPizza Palace Team`
+    };
+
+    /*
+    emailjs.send(
+        import.meta.env.VITE_EMAILJS_SERVICE_ID,
+        import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+        templateParams, 
+        import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+    ).then(() => console.log('Order receipt email sent!'))
+     .catch((err) => console.error('Email failed:', err));
+     */
+
+     setTimeout(() => {
+        console.log('Order receipt email sent! (Demo Mode)');
+        toast.success("Order receipt email sent! (Demo Mode)");
+    }, 1000);
+
+    const phoneNumber = "94123456789"; 
 
     let message = `*New Order via Pizza Palace App* \n`;
     message += `----------------------------\n`;
@@ -155,6 +221,21 @@ const Cart = ({ cartItems, onClose, removeFromCart, cart, isShopOpen }) => {
 
                 <div className="form-group" style={{marginBottom: '15px'}}>
                     <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', color: '#555'}}>
+                        <FaEnvelope />
+                        <label style={{fontWeight:'bold'}}>Email Address</label>
+                    </div>
+                    <input 
+                        type="email" 
+                        placeholder="Enter your email"
+                        className="admin-input" 
+                        value={customerDetails.email}
+                        onChange={(e) => setCustomerDetails({...customerDetails, email: e.target.value})}
+                        style={{width: '100%', boxSizing: 'border-box', padding: '10px'}}
+                    />
+                </div>
+
+                <div className="form-group" style={{marginBottom: '15px'}}>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', color: '#555'}}>
                         <FaMapMarkerAlt />
                         <label style={{fontWeight:'bold'}}>Address</label>
                     </div>
@@ -165,6 +246,26 @@ const Cart = ({ cartItems, onClose, removeFromCart, cart, isShopOpen }) => {
                         onChange={(e) => setCustomerDetails({...customerDetails, address: e.target.value})}
                         style={{width: '100%', boxSizing: 'border-box', padding: '10px', height: '80px', fontFamily: 'inherit'}}
                     />
+                </div>
+
+                <div className="promo-input-section">
+                    <input 
+                        type="text" 
+                        placeholder="Enter Promo Code" 
+                        value={promoInput} 
+                        onChange={(e) => setPromoInput(e.target.value)} 
+                    />
+                    <button onClick={applyPromoCode}>Apply</button>
+                </div>
+
+                <div className="cart-summary">
+                    <p>Subtotal: Rs. {subtotal}</p>
+                    
+                    {discountAmount > 0 && (
+                        <p className="discount-text">Discount: - Rs. {discountAmount}</p>
+                    )}
+                    
+                    <h3>Total to Pay: Rs. {subtotal - discountAmount}</h3>
                 </div>
 
                 <div className="form-group" style={{marginBottom: '20px'}}>
@@ -225,7 +326,7 @@ const Cart = ({ cartItems, onClose, removeFromCart, cart, isShopOpen }) => {
                         <img src={item.image} alt={item.name} />
                         <div className="item-details">
                         <h4>{item.name}</h4>
-                        <p>Rs. {item.price} x {item.quantity}</p>
+                        <p>Rs. {item.price.toFixed(2)} x {item.quantity}</p>
                         </div>
                         <button 
                         className="remove-btn" 

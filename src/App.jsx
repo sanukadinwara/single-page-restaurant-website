@@ -27,23 +27,36 @@ const MainShop = () => {
   const [showMyOrders, setShowMyOrders] = useState(false);
   const [activeCategory, setActiveCategory] = useState("Pizza");
 
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [appliedPromo, setAppliedPromo] = useState(null);
+  const [promoInput, setPromoInput] = useState('');
+
   const [shopStatus, setShopStatus] = useState({ isOpen: true, message: '', type: '' });
   const [currentWord, setCurrentWord] = useState(0);
   const loadingWords = ["Heating up the Oven... 🔥", "Rolling the Dough... 🍕", "Adding Fresh Toppings... 🍅", "Almost Ready... 🚀"];
 
   useEffect(() => {
-      const fetchMenu = async () => {
-        let { data, error } = await supabase.from('menu_items').select('*');
-        if (error) {
-          console.log('Error fetching menu:', error);
-          toast.error('Failed to load menu items');
-        } else {
-          console.log('Menu items loaded:', data);
-          setMenuItems(data || []); 
-        }
-      };
-      fetchMenu();
-    }, []);
+    const fetchMenu = async () => {
+      let { data, error } = await supabase.from('menu_items').select('*');
+      if (error) {
+        console.log('Error fetching menu:', error);
+      } else {
+        setMenuItems(data || []); 
+      }
+    };
+    fetchMenu();
+
+    const menuSubscription = supabase
+      .channel('realtime-menu')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_items' }, () => {
+          fetchMenu(); 
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(menuSubscription);
+    };
+  }, []);
   
   const [favorites, setFavorites] = useState(() => {
     try { return JSON.parse(localStorage.getItem('myFavorites')) || []; } catch { return []; }
@@ -138,68 +151,68 @@ const MainShop = () => {
   }, []);
 
   const checkShopStatus = async () => {
-    let { data, error } = await supabase.from('store_settings').select('*').single();
+    let { data, error } = await supabase
+        .from('store_settings')
+        .select('*')
+        .order('id', { ascending: false }) 
+        .limit(1)
+        .single();
     
     console.log("Database Data:", data); 
-    console.log("Database Error:", error);
 
     if (!data) {
-        const { data: newData, error: insertError } = await supabase.from('store_settings').insert([{
+        const { data: newData } = await supabase.from('store_settings').insert([{
             open_time: '08:00:00',
             close_time: '22:00:00',
             is_holiday_active: false
         }]).select().single();
         
-        if (!insertError && newData) {
-            data = newData;
-        } else {
-            console.error("Failed to create default settings:", insertError);
-            return;
-        }
+        if (newData) data = newData;
+        else return;
     }
 
     const now = new Date();
-    console.log("Current Time (Browser):", now.toString());
 
     if (data.is_holiday_active && data.holiday_start && data.holiday_end) {
         const start = new Date(data.holiday_start);
         const end = new Date(data.holiday_end);
         
-        console.log("Holiday Check:", { start, end, now });
-
         if (now >= start && now <= end) {
-            console.log("⚠️ Holiday Mode Active! Shop Closed.");
-            
-            const formatDate = (d) => {
-                const day = String(d.getDate()).padStart(2, '0');
-                const month = String(d.getMonth() + 1).padStart(2, '0');
-                const year = d.getFullYear();
-                return `${day}.${month}.${year}`;
-            };
-            
-            const formatTime = (d) => {
-                return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-            };
+            const formatDate = (d) => `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
+            const formatTime = (d) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
             const holidayMsg = `Due to unavoidable circumstances, our shop is temporarily closed from ${formatDate(start)} ${formatTime(start)} to ${formatDate(end)} ${formatTime(end)}. We apologize for any inconvenience caused. Thank you for your understanding.`;
 
-            setShopStatus({ 
-                isOpen: false, 
-                type: 'holiday',
-                message: holidayMsg
-            });
+            setShopStatus({ isOpen: false, type: 'holiday', message: holidayMsg });
             return;
-        } else {
-             console.log("Holiday Mode Active in DB but Time NOT matched yet.");
         }
     }
 
-    const currentTimeStr = now.toTimeString().slice(0, 8); 
-    console.log("Daily Check:", { current: currentTimeStr, open: data.open_time, close: data.close_time });
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    
+    const [openHour, openMin] = data.open_time.split(':').map(Number);
+    const openTimeMinutes = openHour * 60 + openMin; 
 
-    if (currentTimeStr < data.open_time || currentTimeStr > data.close_time) {
-        console.log("⚠️ Shop Currently Closed - Outside Operating Hours.");
-        
+    const [closeHour, closeMin] = data.close_time.split(':').map(Number);
+    let closeTimeMinutes = closeHour * 60 + closeMin; 
+
+    if (closeTimeMinutes < openTimeMinutes) {
+        closeTimeMinutes += 24 * 60; 
+    }
+
+    let isCurrentlyOpen = false;
+
+    if (closeTimeMinutes > 24 * 60) {
+        if (currentMinutes >= openTimeMinutes || currentMinutes < (closeTimeMinutes - 24 * 60)) {
+            isCurrentlyOpen = true;
+        }
+    } else {
+        if (currentMinutes >= openTimeMinutes && currentMinutes < closeTimeMinutes) {
+            isCurrentlyOpen = true;
+        }
+    }
+
+    if (!isCurrentlyOpen) {
         const to12h = (time) => {
             const [hours, minutes] = time.split(':');
             const hour = parseInt(hours);
@@ -214,14 +227,13 @@ const MainShop = () => {
         return;
     }
 
-    console.log("✅ Shop is OPEN.");
     setShopStatus({ isOpen: true, type: '', message: '' });
   };
   
   const toggleFavorite = (id) => {
     if (favorites.includes(id)) {
       setFavorites(favorites.filter(fav => fav !== id));
-      toast.error("Removed from favorites");
+      toast.success("Removed from favorites");
     } else {
       setFavorites([...favorites, id]);
       toast.success("Added to favorites");
@@ -284,77 +296,92 @@ const MainShop = () => {
   const [custAddress, setCustAddress] = useState('');
 
   const confirmOrder = async () => {
-    if (!shopStatus.isOpen) { toast.error("Shop Closed!"); return; }
-    if (!custName || !custPhone || !custAddress) { toast.error("Fill details!"); return; }
-    
-    const total = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    const orderDate = new Date();
+      if (!shopStatus.isOpen) { toast.error("Shop Closed!"); return; }
+      if (!custName || !custPhone || !custAddress) { toast.error("Please fill all details!"); return; }
 
-    const { data, error } = await supabase
-      .from('orders')
-      .insert([{ 
-          customer_name: custName, 
-          phone: custPhone, 
-          address: custAddress, 
-          items: cartItems, 
-          total_price: total,
-          status: 'Pending'
-      }])
-      .select();
+      const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
-    if (error) {
-        console.error("Order submission error:", error);
-        toast.error("Failed to place order!");
-        return;
-    }
+      const finalTotal = discountAmount > 0 ? (subtotal - discountAmount) : subtotal;
+      
+      const orderDate = new Date();
 
-    const finalID = (data && data.length > 0) ? data[0].id : Date.now();
-    const createdAt = (data && data.length > 0) ? data[0].created_at : orderDate.toISOString();
+      const { data, error } = await supabase
+        .from('orders')
+        .insert([{ 
+            customer_name: custName, 
+            phone: custPhone, 
+            address: custAddress, 
+            items: cartItems, 
+            total_price: finalTotal, 
+            status: 'Pending'
+        }])
+        .select();
 
-    const newLocalOrder = {
-        id: finalID, 
-        date: new Date(createdAt).toLocaleDateString(), 
-        time: new Date(createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-        customerName: custName,
-        customerPhone: custPhone,
-        customerAddress: custAddress,
-        items: [...cartItems], 
-        total: total,
-        status: 'Pending',
-        created_at: createdAt
+      if (error) {
+          console.error("Order submission error:", error);
+          toast.error("Failed to place order!");
+          return;
+      }
+
+      const finalID = (data && data.length > 0) ? data[0].id : Date.now();
+      const createdAt = (data && data.length > 0) ? data[0].created_at : orderDate.toISOString();
+
+      const newLocalOrder = {
+          id: finalID, 
+          date: new Date(createdAt).toLocaleDateString(), 
+          time: new Date(createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+          customerName: custName,
+          customerPhone: custPhone,
+          customerAddress: custAddress,
+          items: [...cartItems], 
+          total: finalTotal, 
+          status: 'Pending',
+          created_at: createdAt
+      };
+
+      setMyOrders(prevOrders => {
+          const updatedOrders = [newLocalOrder, ...prevOrders];
+          localStorage.setItem('myOrders', JSON.stringify(updatedOrders));
+          return updatedOrders;
+      });
+
+      let msg = `🍕 *New Order #${finalID}* 🍕\n\n`;
+      
+      cartItems.forEach(i => {
+          msg += `▪️ ${i.name} x ${i.quantity}\n`;
+      });
+
+      msg += `\n--------------------------`;
+
+      if (discountAmount > 0 && appliedPromo) {
+          msg += `\nSubtotal: Rs. ${subtotal.toLocaleString()}`;
+          msg += `\nPromo Applied: *${appliedPromo.code}* `;
+          msg += `\nDiscount: - Rs. ${discountAmount.toLocaleString()}`;
+          msg += `\n*Final Total: Rs. ${finalTotal.toLocaleString()}*`;
+      } else {
+          msg += `\n*Total Amount: Rs. ${finalTotal.toLocaleString()}*`;
+      }
+
+      msg += `\n--------------------------\n`;
+      msg += `\n*Customer Details:*`;
+      msg += `\n👤 Name: ${custName}`;
+      msg += `\n📞 Phone: ${custPhone}`;
+      msg += `\n📍 Address: ${custAddress}`;
+      
+      setCartItems([]);
+      setCustName('');
+      setCustPhone('');
+      setCustAddress('');
+
+      if(typeof setDiscountAmount === 'function') setDiscountAmount(0);
+      if(typeof setAppliedPromo === 'function') setAppliedPromo(null);
+      if(typeof setPromoInput === 'function') setPromoInput('');
+
+      setShowCheckoutModal(false);
+      toast.success("Order Placed Successfully!");
+
+      window.open(`https://wa.me/94123456789?text=${encodeURIComponent(msg)}`, "_blank");
     };
-
-    setMyOrders(prevOrders => {
-        const updatedOrders = [newLocalOrder, ...prevOrders];
-        localStorage.setItem('myOrders', JSON.stringify(updatedOrders));
-        return updatedOrders;
-    });
-
-    let msg = `🍕 *New Order #${finalID}* 🍕\n\n`;
-    cartItems.forEach(i => msg += `${i.name} x ${i.quantity}\n`);
-    msg += `\nTotal: Rs. ${total}\n\n ${custName}\n ${custPhone}\n ${custAddress}`;
-    
-    setCartItems([]);
-    setCustName('');
-    setCustPhone('');
-    setCustAddress('');
-    setShowCheckoutModal(false);
-    
-    toast.success("Order Placed Successfully!");
-
-    window.open(`https://wa.me/94710993625?text=${encodeURIComponent(msg)}`, "_blank");
-};
-
-  if (loading) {
-    return (
-      <div className="loader-container" style={{flexDirection: 'column'}}>
-        <div className="spinner"></div>
-        <p key={currentWord} className="loading-text">
-            {loadingWords[currentWord]}
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div>
@@ -376,6 +403,10 @@ const MainShop = () => {
         menuItems={menuItems}  
         setActiveCategory={setActiveCategory}
       />
+      <div style={{ 
+          marginTop: !shopStatus.isOpen ? '80px' : '0px', 
+          transition: 'margin-top 0.4s ease-in-out' 
+      }}></div>
       <PromoBanner />
       <Hero/>
       
@@ -417,12 +448,17 @@ const MainShop = () => {
             onClose={() => setIsCartOpen(false)} 
             removeFromCart={(id) => setCartItems(cartItems.filter(i => i.id !== id))} 
             isShopOpen={shopStatus.isOpen}
+            
+            discountAmount={discountAmount}
+            setDiscountAmount={setDiscountAmount}
+            appliedPromo={appliedPromo}
+            setAppliedPromo={setAppliedPromo}
+            promoInput={promoInput}
+            setPromoInput={setPromoInput}
+            
             handleCheckoutClick={() => { 
                 if(!shopStatus.isOpen) {
-                    toast.error("Shop is Closed! Cannot checkout at this time.", {
-                        duration: 3000,
-                        icon: '🔒'
-                    });
+                    toast.error("Shop is Closed! Cannot checkout at this time.", { duration: 3000, icon: '🔒' });
                     return;
                 }
                 if(cartItems.length===0) {

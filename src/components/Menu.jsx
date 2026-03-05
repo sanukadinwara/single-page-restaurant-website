@@ -14,13 +14,18 @@ function Menu({ menuItems, openModel, favorites, toggleFavorite, isShopOpen, act
         }
     }, [menuItems]);
 
-    const categories = [
-        { name: "Pizza", icon: "🍕" },
-        { name: "Side Items", icon: "🍟", },
-        { name: "Beverages", icon: "🥤" },
-        { name: "Desserts", icon: "🍰" },
-        { name: "Combo Ideas", icon: "🍱" }
-    ];
+    const dynamicCategories = [...new Set(menuItems.map(item => item.category))]
+        .filter(Boolean)
+        .sort((a, b) => {
+            if (a.toLowerCase() === 'pizza') return -1;
+            if (b.toLowerCase() === 'pizza') return 1;
+            return 0; 
+        });
+
+    const formatCategory = (name) => {
+        if (!name) return "";
+        return name.trim().charAt(0).toUpperCase() + name.trim().slice(1).toLowerCase();
+    };
 
     const filteredItems = menuItems.filter(item => 
         item.category?.toLowerCase() === activeCategory.toLowerCase()
@@ -39,22 +44,22 @@ function Menu({ menuItems, openModel, favorites, toggleFavorite, isShopOpen, act
             <h2>Our Menu</h2>
 
             <div className="category-container" style={{display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '30px'}}>
-                {categories.map((cat) => (
+                {dynamicCategories.map((catName) => (
                     <button 
-                        key={cat.name}
-                        onClick={() => setActiveCategory(cat.name)}
+                        key={catName}
+                        onClick={() => setActiveCategory(catName)}
                         style={{
                             padding: '8px 15px',
                             borderRadius: '20px',
                             border: '1px solid #ff9f1c',
-                            background: activeCategory === cat.name ? '#ff9f1c' : 'transparent',
-                            color: activeCategory === cat.name ? '#333333' : '#333333', 
+                            background: activeCategory === catName ? '#ff9f1c' : 'transparent',
+                            color: activeCategory === catName ? '#333333' : '#333333', 
                             fontWeight: 'bold',
                             cursor: 'pointer',
                             transition: '0.3s'
                         }}
                     >
-                        {cat.icon} {cat.name}
+                        {formatCategory(catName)} 
                     </button>
                 ))}
             </div>

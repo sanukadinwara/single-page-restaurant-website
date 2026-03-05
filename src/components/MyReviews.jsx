@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaStar, FaTimes, FaUserCircle } from 'react-icons/fa';
+import { FaStar, FaTimes, FaUserCircle, FaEdit, FaTrashAlt } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../supabaseClient';
 import '../App.css';
@@ -18,8 +18,14 @@ function Reviews() {
 
   const [showAllReviews, setShowAllReviews] = useState(false);
 
+  const [myReviewIds, setMyReviewIds] = useState([]); 
+  const [editingId, setEditingId] = useState(null);
+  const [reviewToDelete, setReviewToDelete] = useState(null);
+
   useEffect(() => {
     fetchReviews();
+    const savedIds = JSON.parse(localStorage.getItem('my_reviews')) || [];
+    setMyReviewIds(savedIds);
   }, []);
 
   const fetchReviews = async () => {
@@ -38,6 +44,43 @@ function Reviews() {
     }
   };
 
+  const handleDeleteReview = async () => {
+    if (!reviewToDelete) return; 
+
+    const loadingToast = toast.loading("Deleting...");
+    
+    const { error } = await supabase.from('reviews').delete().eq('id', reviewToDelete);
+    
+    if (error) {
+      toast.dismiss(loadingToast);
+      toast.error("Failed to delete.");
+      return;
+    }
+    
+    toast.dismiss(loadingToast);
+    toast.success("Review deleted successfully!");
+    
+    const updatedIds = myReviewIds.filter(revId => revId !== reviewToDelete);
+    setMyReviewIds(updatedIds);
+    localStorage.setItem('my_reviews', JSON.stringify(updatedIds));
+    
+    setReviewToDelete(null); 
+    fetchReviews();
+  };
+
+  const handleEditClick = (review) => {
+    setEditingId(review.id);
+    setFormData({
+      name: review.name,
+      email: review.email || '',
+      rating: review.rating,
+      text: review.message 
+    });
+    setShowAllReviews(false); 
+    
+    document.getElementById('reviews').scrollIntoView({ behavior: 'smooth' });
+  };
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -50,33 +93,55 @@ function Reviews() {
     e.preventDefault();
     
     if (!formData.name || !formData.text || formData.rating === 0) {
-      toast.error("Please fill Name, Message & give Stars!");
+      toast.error("Please fill Name, Message & Give Stars!");
       return;
     }
 
-    const loadingToast = toast.loading("Submitting review...");
+    const loadingToast = toast.loading(editingId ? "Updating review..." : "Submitting review...");
 
     try {
-      const { error } = await supabase.from('reviews').insert([
-        {
+      if (editingId) {
+        const { error } = await supabase.from('reviews').update({
           name: formData.name,
           email: formData.email,
           rating: formData.rating,
           message: formData.text
+        }).eq('id', editingId);
+
+        if (error) throw error;
+        toast.dismiss(loadingToast);
+        toast.success("Review Updated Successfully!");
+        setEditingId(null);
+
+      } else {
+        const { data, error } = await supabase.from('reviews').insert([
+          {
+            name: formData.name,
+            email: formData.email,
+            rating: formData.rating,
+            message: formData.text
+          }
+        ]).select(); 
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const newId = data[0].id;
+          const updatedIds = [...myReviewIds, newId];
+          setMyReviewIds(updatedIds);
+          localStorage.setItem('my_reviews', JSON.stringify(updatedIds));
         }
-      ]);
 
-      if (error) throw error;
-
-      toast.dismiss(loadingToast);
-      toast.success("Review Added Successfully! Thank you. ⭐");
+        toast.dismiss(loadingToast);
+        toast.success("Review Added Successfully! Thank you.");
+      }
       
       setFormData({ name: '', email: '', rating: 0, text: '' });
       fetchReviews(); 
 
     } catch (error) {
       toast.dismiss(loadingToast);
-      toast.error("Failed to submit review.");
+      toast.error("Failed to save review.");
       console.error(error);
     }
   };
@@ -142,8 +207,13 @@ function Reviews() {
             rows="4"
           ></textarea>
 
-          <div className="form-btn-row">
-            <button type="submit" className="submit-btn">Add Review</button>
+          <div className="form-btn-row" style={{display:'flex', gap:'10px', justifyContent:'center', marginTop:'15px'}}>
+            {editingId && (
+                <button type="button" className="cancel-btn-admin" onClick={() => { setEditingId(null); setFormData({ name: '', email: '', rating: 0, text: '' }); }} style={{padding:'10px 20px', borderRadius:'5px', border:'none', cursor:'pointer', background:'#ccc', color:'#000'}}>
+                    Cancel Edit
+                </button>
+            )}
+            <button type="submit" className="submit-btn">{editingId ? "Update Review" : "Add Review"}</button>
           </div>
 
         </form>
@@ -191,8 +261,45 @@ function Reviews() {
                             </div>
                         </div>
                         <p className="review-text">"{review.message}"</p>
+                        {myReviewIds.map(String).includes(String(review.id)) && (
+                            <div style={{display:'flex', gap:'15px', marginTop:'10px', borderTop:'1px dashed #ddd', paddingTop:'10px'}}>
+                                <button onClick={() => handleEditClick(review)} style={{background:'none', border:'none', color:'#2980b9', cursor:'pointer', display:'flex', alignItems:'center', gap:'5px', fontSize:'0.85rem'}}>
+                                    <FaEdit /> Edit
+                                </button>
+                                <button 
+                                  onClick={() => setReviewToDelete(review.id)} 
+                                  style={{background:'none', border:'none', color:'#d32f2f', cursor:'pointer', display:'flex', alignItems:'center', gap:'5px', fontSize:'0.85rem'}}
+                                >
+                                  <FaTrashAlt /> Delete
+                                </button>
+                            </div>
+                        )}
                     </div>
                     ))}
+                </div>
+            </div>
+        </div>
+      )}
+
+      {reviewToDelete && (
+        <div className="modal-overlay" style={{zIndex: 3000}}>
+            <div className="modal-content fade-in" style={{maxWidth: '400px', textAlign: 'center', padding: '30px', borderRadius: '15px'}}>
+                <div style={{fontSize: '3rem', marginBottom: '10px'}}>⚠️</div>
+                <h3 style={{marginBottom: '10px', color: '#333'}}>Delete Review?</h3>
+                <p style={{color: '#666', marginBottom: '25px'}}>Are you sure you want to permanently delete this review? This action cannot be undone.</p>
+                <div style={{display: 'flex', gap: '15px', justifyContent: 'center'}}>
+                    <button 
+                        onClick={() => setReviewToDelete(null)} 
+                        style={{flex: 1, padding: '12px', borderRadius: '8px', border: 'none', background: '#e0e0e0', color: '#333', cursor: 'pointer', fontWeight: 'bold'}}
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        onClick={handleDeleteReview} 
+                        style={{flex: 1, padding: '12px', borderRadius: '8px', border: 'none', background: '#d32f2f', color: '#fff', cursor: 'pointer', fontWeight: 'bold'}}
+                    >
+                        Yes, Delete
+                    </button>
                 </div>
             </div>
         </div>

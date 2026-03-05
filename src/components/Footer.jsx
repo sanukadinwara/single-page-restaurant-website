@@ -8,7 +8,7 @@ function Footer() {
   const [email, setEmail] = useState("");
 
   const contactLinks = [
-    { id: 1, icon: <FaPhoneAlt/>, text: "+94 77 123 4567", href: "tel:+94771234567" },
+    { id: 1, icon: <FaPhoneAlt/>, text: "+12 34 567 8910", href: "tel:+94123456789" },
     { id: 2, icon: <FaEnvelope />, text: "info@pizzapalace.com", href: "mailto:info@pizzapalace.com" },
     { id: 3, icon: <FaFacebook />, text: "PizzaPalace LK", href: "https://facebook.com" },
     { id: 4, icon: <FaInstagram />, text: "@pizzapalace_lk", href: "https://instagram.com" }
@@ -34,7 +34,7 @@ function Footer() {
             toast.error("Subscription failed. Please try again.");
         }
     } else {
-        toast.success(`Thank you! ${email} has been subscribed. 📩`);
+        toast.success(`Thank you! ${email} has been subscribed.`);
         setEmail("");
     }
   };

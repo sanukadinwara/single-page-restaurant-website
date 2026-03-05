@@ -54,20 +54,37 @@ function AdminLogin() {
     e.preventDefault();
     setLoading(true);
 
+    const enteredEmail = email.trim().toLowerCase();
+
+    if (enteredEmail === 'admin' && password === '12345') {
+        toast.success("Welcome Admin!");
+        sessionStorage.setItem('pizzaAdminToken', 'demo_mode_token_12345'); 
+        sessionStorage.setItem('adminRole', 'demo'); 
+        setTimeout(() => {
+            navigate('/admin/dashboard');
+        }, 1000);
+        return; 
+    }
+
+    if (enteredEmail === 'admin') {
+        toast.error("Invalid Demo Password!");
+        setLoading(false);
+        return;
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: email,
+      email: email.trim(),
       password: password,
     });
 
     if (error) {
       console.error("Login Error:", error.message);
-      toast.error(error.message || "Invalid Email or Password! ❌");
+      toast.error("Invalid Email or Password!");
       setLoading(false);
     } else {
-      toast.success("Welcome Admin! 👨‍🍳");
-      
+      toast.success("Welcome Back, Super Admin!");
       sessionStorage.setItem('pizzaAdminToken', data.session.access_token);
-      
+      sessionStorage.setItem('adminRole', 'superadmin'); 
       setTimeout(() => {
         navigate('/admin/dashboard');
       }, 1000);
@@ -76,6 +93,13 @@ function AdminLogin() {
 
   const handleEmailSubmit = async () => {
     if (!email) { toast.error("Please enter a valid email address!"); return; }
+
+    const enteredEmail = email.trim().toLowerCase();
+
+    if (enteredEmail === 'admin') {
+        toast.error("Demo users cannot reset password!");
+        return;
+    }
 
     const { data, error } = await supabase
         .from('admin_users')
@@ -99,20 +123,11 @@ function AdminLogin() {
 
     const loadingToast = toast.loading("Sending code...");
 
-    emailjs.send(
-        import.meta.env.VITE_EMAILJS_SERVICE_ID,
-        import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
-        templateParams,
-        import.meta.env.VITE_EMAILJS_PUBLIC_KEY
-    ).then(() => {
+    setTimeout(() => {
         toast.dismiss(loadingToast);
-        toast.success(`Code sent to ${email}`);
+        toast.success(`Demo Mode: Your OTP is ${code}`, { duration: 6000 }); 
         setStep(3);
-    }).catch((err) => {
-        toast.dismiss(loadingToast);
-        toast.error("Failed to send email.");
-        alert(JSON.stringify(err));
-    });
+    }, 1500);
   };
 
   const handleCodeSubmit = () => {
@@ -172,8 +187,12 @@ function AdminLogin() {
             <h2>Admin Login <FaUnlockAlt /></h2>
             <input type="text" placeholder="Username" className="admin-input" value={email} onChange={(e) => setEmail(e.target.value)} />
             <input type="password" placeholder="Password" className="admin-input" value={password} onChange={(e) => setPassword(e.target.value)} />
-            <p className="forgot-link" onClick={() => { setEmail(''); setStep(2); }}>Forgot Password?</p>
-            <button className="admin-btn" onClick={handleLoginSubmit}>Login</button>
+            
+            <p className="forgot-link" onClick={() => { setEmail(''); setStep(2); }} style={{cursor: 'pointer', color: '#e67e22', textAlign: 'right', fontSize: '14px', marginTop: '10px'}}>
+               Forgot Password?
+            </p>
+
+            <button className="admin-btn" style={{marginTop: '15px'}} onClick={handleLoginSubmit}>Login</button>
           </div>
         )}
         

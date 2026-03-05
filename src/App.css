@@ -3324,3 +3324,227 @@ select.admin-input {
   font-size: 0.75rem;
 }
 
+@media screen and (max-width: 768px) {
+  
+  .navbar-container, nav {
+    padding: 10px 15px !important; 
+    width: 100% !important;
+    box-sizing: border-box; 
+    overflow-x: hidden; 
+  }
+
+  .navbar-right, .nav-icons {
+    display: flex !important;
+    align-items: right;
+    gap: 1px !important;
+    margin-right: 0 !important;
+  }
+
+  .admin-login-btn, .login-btn {
+    display: block !important;
+    font-size: 12px !important;
+    padding: 5px 10px !important;
+  }
+
+  .cart-icon-container {
+    margin-right: 0 !important;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  
+  .search-bar, .search-input, input[type="text"] {
+    max-width: 350px !important; 
+    width: 100% !important; 
+  }
+
+  .search-container, .nav-search {
+    position: relative; 
+    display: flex;
+    align-items: center;
+    right: 0 !important; 
+  }
+
+  .navbar-right {
+    flex-wrap: nowrap !important;
+    overflow: hidden;
+  }
+
+}
+
+.promo-slider-container {
+  position: relative;
+  width: 100%;
+  height: 400px; 
+  overflow: hidden;
+  margin-bottom: 0 !important; 
+  padding-bottom: 0 !important;
+}
+
+.promo-slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transition: transform 1s ease-in-out; 
+  display: flex;
+  align-items: center;
+}
+
+.promo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0 !important; 
+}
+
+.promo-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  padding-left: 50px;
+}
+
+.promo-content h1 {
+  font-size: 3rem;
+  color: white;
+  margin-bottom: 10px;
+}
+
+.promo-content p {
+  font-size: 1.2rem;
+  color: white;
+  margin-bottom: 20px;
+}
+
+#hero, .home-section {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+.promo-slider-container {
+  position: relative;
+  width: 100%;
+  height: 280px; 
+  overflow: hidden;
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  background-color: #000; 
+}
+
+.promo-slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.promo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0 !important;
+}
+
+.promo-overlay-dark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.7) 25%, rgba(0, 0, 0, 0.5) 50%, rgba(0, 0, 0, 0.3) 75%, rgba(0, 0, 0, 0) 100%);
+  display: flex;
+  align-items: center;
+  padding-left: 60px;
+}
+
+.promo-heading-main {
+  font-size: 2.5rem;
+  font-weight: 800; 
+  color: #ff9f1c; 
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7); 
+}
+
+.promo-sub-text {
+  font-size: 1.1rem;
+  color: #ffffff;
+  font-weight: 500;
+  margin-bottom: 15px;
+  max-width: 80%;
+}
+
+.promo-code-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px 15px;
+  border-radius: 5px;
+  border: 1px dashed #ff9f1c;
+  color: white;
+}
+
+.code-text {
+  background: #ff9f1c;
+  color: #1a1a1a;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.promo-slider-container {
+  position: relative;
+  width: 100%;
+  height: 250px;
+  overflow: hidden;
+}
+
+.promo-slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0; 
+  transition: all 0.8s ease-in-out; 
+}
+
+.promo-slide.activeSlide {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.promo-slide.nextSlide {
+  transform: translateX(100%);
+}
+
+.promo-slide.lastSlide {
+  transform: translateX(-100%);
+}
+
+.sub-info-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; 
+    gap: 10px;
+}
+
+.promo-sub-text {
+    margin-bottom: 0 !important; 
+}
+
+.promo-slider-container {
+    height: 250px !important; 
+    border-radius: 0 !important;
+}

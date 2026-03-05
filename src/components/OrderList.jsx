@@ -1,8 +1,31 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../supabaseClient';
 import { FaTimes, FaShoppingBag, FaClock, FaCheckCircle, FaMotorcycle, FaUtensils } from 'react-icons/fa';
 import '../App.css';
 
-const MyOrders = ({ orders, closeMyOrders }) => {
+const MyOrders = ({ closeMyOrders }) => {
+
+  const [myLiveOrders, setMyLiveOrders] = useState([]);
+
+  useEffect(() => {
+    const fetchLiveOrders = async () => {
+      const savedOrderIds = JSON.parse(localStorage.getItem('my_orders')) || [];
+      
+      if (savedOrderIds.length > 0) {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .in('id', savedOrderIds) 
+          .order('id', { ascending: false });
+
+        if (data && !error) {
+          setMyLiveOrders(data);
+        }
+      }
+    };
+
+    fetchLiveOrders();
+  }, []);
   
   const getStatusInfo = (status) => {
       switch (status) {
@@ -15,25 +38,23 @@ const MyOrders = ({ orders, closeMyOrders }) => {
       }
   };
 
-  const sortedOrders = [...orders].reverse();
-
   return (
     <div className="modal-overlay">
       <div className="modal-content my-orders-box" style={{maxHeight:'85vh', overflowY:'auto'}}>
         
         <div className="favorites-header" style={{borderBottom:'1px solid #eee', paddingBottom:'10px', marginBottom:'15px'}}>
-          <h2 style={{margin:0}}>My Orders 📦</h2>
+          <h2 style={{margin:0}}>My Orders</h2>
           <button className="close-btn-fav" onClick={closeMyOrders}>✖</button>
         </div>
 
         <div className="orders-list-body">
-          {sortedOrders.length === 0 ? (
+          {myLiveOrders.length === 0 ? (
             <div className="empty-cart" style={{textAlign:'center', padding:'40px', color:'#999'}}>
               <FaShoppingBag style={{fontSize: '3rem', marginBottom: '15px', color: '#ddd'}}/>
               <p>You haven't placed any orders yet.</p>
             </div>
           ) : (
-            sortedOrders.map((order) => {
+            myLiveOrders.map((order) => {
               const statusInfo = getStatusInfo(order.status);
 
               return (
@@ -57,21 +78,26 @@ const MyOrders = ({ orders, closeMyOrders }) => {
                   </div>
 
                   <div style={{fontSize:'0.85rem', color:'#777', marginBottom:'10px'}}>
-                    <FaClock style={{marginRight:'5px'}}/> {order.date}
+                    <FaClock style={{marginRight:'5px'}}/> 
+                    {new Date(order.created_at).toLocaleDateString()} at {new Date(order.created_at).toLocaleTimeString()}
                   </div>
 
                   <div style={{background:'#f9f9f9', padding:'10px', borderRadius:'8px', fontSize:'0.95rem'}}>
                     {order.items.map((item, index) => (
                       <div key={index} style={{display:'flex', justifyContent:'space-between', marginBottom:'5px'}}>
                         <span>{item.name} <small style={{color:'#666'}}>x{item.quantity}</small></span>
-                        <span style={{fontWeight:'500'}}>Rs. {item.price * item.quantity}</span>
+                        <span style={{fontWeight:'500'}}>
+                          Rs. {Number(item.price * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
                       </div>
                     ))}
                   </div>
 
                   <div style={{display:'flex', justifyContent:'space-between', marginTop:'15px', borderTop:'1px dashed #ddd', paddingTop:'10px', fontWeight:'bold', fontSize:'1.1rem'}}>
                     <span>Total Amount</span>
-                    <span style={{color:'#d35400'}}>Rs. {Number(order.total).toFixed(2)}</span>
+                    <span style={{color:'#d35400'}}>
+                      Rs. {Number(order.total_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
                   </div>
 
                 </div>
