@@ -29,7 +29,7 @@ const Cart = ({ cartItems, onClose, removeFromCart, cart, isShopOpen }) => {
   const subTotal = finalCart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const grandTotal = subTotal - discount;
 
-  const applyPromoCode = async () => {
+  const applyPromo = async () => {
     if (!promoInput) return;
 
     const loadingToast = toast.loading("Checking code...");
