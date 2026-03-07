@@ -138,44 +138,82 @@ function AdminDashboard() {
   }, []);
 
   useEffect(() => {
+  fetchOrders();
 
-    fetchOrders();
+  const channel = supabase
+    .channel('realtime-orders') 
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'orders' },
+      (payload) => {
+        console.log('New Order Received:', payload.new);
 
-    const channel = supabase
-      .channel('realtime-orders') 
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        (payload) => {
-          
-          if (payload.eventType === 'INSERT') {
-            console.log('New Order Received:', payload.new);
-            
-            notificationSound.currentTime = 0; 
-            notificationSound.play().catch(err => console.log("Audio play blocked by browser:", err));
+        notificationSound.currentTime = 0; 
+        notificationSound.play().catch(err => console.log("Audio play blocked:", err));
 
-            setOrders((prevOrders) => [payload.new, ...prevOrders]);
-            
-            toast.success(`New Order #${payload.new.id} Received!`, { duration: 4000 });
-          } 
+        setOrders((prevOrders) => [payload.new, ...prevOrders]);
 
-          else if (payload.eventType === 'UPDATE') {
-            console.log('Order Updated:', payload.new);
-            
-            setOrders((prevOrders) => 
-              prevOrders.map((order) => 
-                order.id === payload.new.id ? payload.new : order
-              )
-            );
-          }
-        }
-      )
-      .subscribe();
+        toast.custom((t) => (
+          <div
+            className={`${
+              t.visible ? 'animate-enter' : 'animate-leave'
+            } max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+            style={{
+              borderLeft: '5px solid #ff9f1c', 
+              background: '#1a1a1a', 
+              color: 'white',
+              padding: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
+            }}
+          >
+            <div style={{ fontSize: '24px' }}></div>
+            <div style={{ flex: '1' }}>
+              <p style={{ margin: 0, fontWeight: 'bold', fontSize: '14px' }}>
+                New Order Received!
+              </p>
+              <p style={{ margin: 0, fontSize: '12px', color: '#ccc' }}>
+                Order #{payload.new.id} is waiting for your confirmation.
+              </p>
+            </div>
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#888',
+                cursor: 'pointer',
+                fontSize: '18px'
+              }}
+            >
+              <FaTimes />
+            </button>
+          </div>
+        ), {
+          position: 'bottom-right',
+          duration: 5000,
+        });
+      }
+    )
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'orders' },
+      (payload) => {
+        setOrders((prevOrders) => 
+          prevOrders.map((order) => 
+            order.id === payload.new.id ? payload.new : order
+          )
+        );
+      }
+    )
+    .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, []);
 
   useEffect(() => {
     let timeout;

@@ -21,7 +21,6 @@ const MainShop = () => {
   const [loading, setLoading] = useState(true);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [menuItems, setMenuItems] = useState([]);
-  const [cartItems, setCartItems] = useState([]);
   const [showFavorites, setShowFavorites] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showMyOrders, setShowMyOrders] = useState(false);
@@ -34,6 +33,20 @@ const MainShop = () => {
   const [shopStatus, setShopStatus] = useState({ isOpen: true, message: '', type: '' });
   const [currentWord, setCurrentWord] = useState(0);
   const loadingWords = ["Heating up the Oven... 🔥", "Rolling the Dough... 🍕", "Adding Fresh Toppings... 🍅", "Almost Ready... 🚀"];
+
+  const [cartItems, setCartItems] = useState(() => {
+  try {
+    const savedCart = localStorage.getItem('pizzaCart');
+    return savedCart ? JSON.parse(savedCart) : [];
+  } catch (error) {
+    console.error("Error loading cart from localStorage", error);
+    return [];
+  }
+  });
+
+  useEffect(() => {
+  localStorage.setItem('pizzaCart', JSON.stringify(cartItems));
+}, [cartItems]);
 
   useEffect(() => {
     const fetchMenu = async () => {
@@ -295,6 +308,68 @@ const MainShop = () => {
   const [custPhone, setCustPhone] = useState('');
   const [custAddress, setCustAddress] = useState('');
 
+  const applyPromoCode = async () => {
+    if (!promoInput) return;
+
+    const loadingToast = toast.loading("Checking code...");
+
+    try {
+        const { data, error } = await supabase
+            .from('promo_codes')
+            .select('*')
+            .eq('code', promoInput.toUpperCase())
+            .maybeSingle();
+
+        toast.dismiss(loadingToast);
+
+        if (error || !data) {
+            toast.error("Invalid Promo Code!");
+            return;
+        }
+
+        const now = new Date();
+        const start = new Date(data.start_date);
+        const end = new Date(data.end_date);
+
+        if (now < start || now > end) {
+            toast.error("This code has expired!");
+            return;
+        }
+
+        let discountableAmount = 0;
+        const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
+        if (data.apply_to === 'All' || !data.apply_to) {
+            discountableAmount = subtotal;
+        } else {
+            discountableAmount = cartItems
+                .filter(item => item.category === data.apply_to)
+                .reduce((acc, item) => acc + (item.price * item.quantity), 0);
+            
+            if (discountableAmount === 0) {
+                toast.error(`This code is only valid for ${data.apply_to} items!`);
+                return;
+            }
+        }
+
+        let discount = 0;
+        if (data.discount_type === 'percentage') {
+            discount = (discountableAmount * data.value) / 100;
+        } else {
+            discount = Math.min(data.value, discountableAmount);
+        }
+
+        setDiscountAmount(discount);
+        setAppliedPromo(data);
+        toast.success(`Coupon Applied! You saved Rs. ${discount.toLocaleString()}`);
+
+    } catch (err) {
+        toast.dismiss(loadingToast);
+        toast.error("Something went wrong!");
+        console.error(err);
+    }
+};
+
   const confirmOrder = async () => {
       if (!shopStatus.isOpen) { toast.error("Shop Closed!"); return; }
       if (!custName || !custPhone || !custAddress) { toast.error("Please fill all details!"); return; }
@@ -443,18 +518,19 @@ const MainShop = () => {
       )}
 
       {isCartOpen && (
-        <Cart 
-            cart={cartItems} 
-            onClose={() => setIsCartOpen(false)} 
-            removeFromCart={(id) => setCartItems(cartItems.filter(i => i.id !== id))} 
-            isShopOpen={shopStatus.isOpen}
-            
-            discountAmount={discountAmount}
-            setDiscountAmount={setDiscountAmount}
-            appliedPromo={appliedPromo}
-            setAppliedPromo={setAppliedPromo}
-            promoInput={promoInput}
-            setPromoInput={setPromoInput}
+  <Cart 
+      cart={cartItems} 
+      onClose={() => setIsCartOpen(false)} 
+      removeFromCart={(id) => setCartItems(cartItems.filter(i => i.id !== id))} 
+      isShopOpen={shopStatus.isOpen}
+      
+      discountAmount={discountAmount}
+      setDiscountAmount={setDiscountAmount} 
+      appliedPromo={appliedPromo}
+      setAppliedPromo={setAppliedPromo}
+      promoInput={promoInput}
+      setPromoInput={setPromoInput}
+      applyPromoCode={applyPromoCode}
             
             handleCheckoutClick={() => { 
                 if(!shopStatus.isOpen) {
