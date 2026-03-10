@@ -3623,3 +3623,41 @@ select.admin-input {
 .animate-leave {
   animation: leave 0.3s ease-in forwards;
 }
+
+/* --- Mobile View Fixes --- */
+@media screen and (max-width: 768px) {
+  
+  /* 1. Navbar Icons Fix (අයිකන් ඔක්කොම ෆෝන් එකට ගාණට හදමු) */
+  .nav-left {
+    gap: 5px !important;
+  }
+  .logo {
+    font-size: 1.1rem !important; /* ලෝගෝ එක පොඩ්ඩක් පොඩි කළා ඉඩ ගන්න */
+  }
+  .nav-icons {
+    gap: 3px !important; /* අයිකන් අතර පරතරය අඩු කළා */
+  }
+  .nav-icons .icon-wrapper {
+    width: 34px !important; /* අයිකන් රවුමේ සයිස් එක ෆෝන් එකට ගාණට හැදුවා */
+    height: 34px !important;
+  }
+  .nav-icons .nav-icon {
+    font-size: 1rem !important;
+  }
+
+  /* 2. Stats Boxes Height Fix (කොටු 4ම එකම උසින් තියමු) */
+  .stats-container {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 15px !important;
+    align-items: stretch !important; /* මේකෙන් තමයි කොටු ඔක්කොම එකම උසට එන්නේ */
+  }
+  .stat-card {
+    width: 100% !important;
+    height: 100% !important; /* කොටුවේ උස සම්පූර්ණ කළා */
+    display: flex !important;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+}
